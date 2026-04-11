@@ -1,0 +1,14 @@
+# microservice-ia/src/main/resources/application.yml
+
+ia:
+  python:
+    # Chemin absolu vers python dans ton venv
+    executable: "C:/Users/user/Desktop/PFE/Plateforme web de supervision proactive des abonnement 5G/Backend/microservice/microservice-ia/src/main/python/venv/Scripts/python.exe"
+
+    # Chemin absolu vers predict.py
+    predict:
+      script: "C:/Users/user/Desktop/PFE/Plateforme web de supervision proactive des abonnement 5G/Backend/microservice/microservice-ia/src/main/python/predict.py"
+
+    # Chemin absolu vers le dossier models/
+    models:
+      dir: "C:/Users/user/Desktop/PFE/Plateforme web de supervision proactive des abonnement 5G/Backend/microservice/microservice-ia/src/main/python/models/"

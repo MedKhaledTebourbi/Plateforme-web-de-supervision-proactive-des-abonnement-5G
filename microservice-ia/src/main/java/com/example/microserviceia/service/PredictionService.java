@@ -1,0 +1,173 @@
+package com.example.microserviceia.service;
+
+import com.example.microserviceia.Repository.SaturationRecordRepository;
+import com.example.microserviceia.dto.LinearRegressionResult;
+import com.example.microserviceia.dto.PredictionResult;
+import com.example.microserviceia.dto.ZoneFeatureVector;
+import com.example.microserviceia.entity.SaturationRecord;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class PredictionService {
+
+    private final SaturationRecordRepository recordRepository;
+
+    private static final double SEUIL_SATURATION = 80.0;
+    private static final int MIN_POINTS_REGRESSION = 5;
+
+    /**
+     * Prédit quand la zone atteindra le seuil de saturation.
+     * Utilise régression linéaire sur l'historique + correction par accélération.
+     */
+    public PredictionResult predict(ZoneFeatureVector features) {
+
+        List<SaturationRecord> history = recordRepository
+                .findByZoneIdAndTimestampAfterOrderByTimestamp(
+                        features.getZoneId(),
+                        LocalDateTime.now().minusHours(24)
+                );
+
+        if (history.size() < MIN_POINTS_REGRESSION) {
+            return buildInsufficientDataResult(features);
+        }
+
+        // Régression linéaire sur les N derniers points
+        LinearRegressionResult regression = performLinearRegression(history);
+
+        if (regression.getSlope() <= 0) {
+            // Tendance stable ou décroissante → pas de saturation prévue
+            return PredictionResult.builder()
+                    .zoneId(features.getZoneId())
+                    .saturationPredite(false)
+                    .message("Tendance stable ou décroissante — pas de saturation prévue")
+                    .confidence(regression.getRSquared())
+                    .build();
+        }
+
+        // Extrapolation : quand atteindra-t-on le seuil ?
+        double currentTaux = features.getTauxUtilisation();
+        double deltaNeeded = SEUIL_SATURATION - currentTaux;
+
+        if (deltaNeeded <= 0) {
+            return PredictionResult.builder()
+                    .zoneId(features.getZoneId())
+                    .saturationPredite(true)
+                    .heuresAvantSaturation(0.0)
+                    .datePredite(LocalDateTime.now())
+                    .message("Zone déjà saturée")
+                    .confidence(1.0)
+                    .build();
+        }
+
+        // heuresAvantSaturation = delta_restant / vitesse_par_heure
+        // avec correction par accélération (si accélération positive, on arrive plus vite)
+        double vitesseHoraire = regression.getSlope();
+        double accelerationFactor = 1.0 + Math.max(0, features.getAcceleration() / 100.0);
+        double vitesseCorrigee = vitesseHoraire * accelerationFactor;
+
+// 🔒 sécurité vitesse
+        if (vitesseCorrigee <= 0.0001) {
+            return PredictionResult.builder()
+                    .zoneId(features.getZoneId())
+                    .saturationPredite(false)
+                    .message("Vitesse trop faible — saturation non prévisible")
+                    .confidence(0.0)
+                    .build();
+        }
+
+// calcul heures
+        double heures = deltaNeeded / vitesseCorrigee;
+
+// 🛑 Protection contre valeurs invalides
+        if (Double.isNaN(heures) || Double.isInfinite(heures) || heures < 0 || heures > 168) {
+            return PredictionResult.builder()
+                    .zoneId(features.getZoneId())
+                    .saturationPredite(false)
+                    .message("Prédiction invalide (données incohérentes)")
+                    .confidence(0.0)
+                    .build();
+        }
+
+// ✅ Limite max (1 semaine)
+        heures = Math.min(heures, 168);
+
+        LocalDateTime datePredite = LocalDateTime.now().plusHours((long) heures);
+// 🔒 date sécurisée
+
+        if (heures > 0 && heures < 1000) {
+            datePredite = LocalDateTime.now().plusHours((long) heures);
+        }
+
+        return PredictionResult.builder()
+                .zoneId(features.getZoneId())
+                .saturationPredite(true)
+                .heuresAvantSaturation(Math.round(heures * 10.0) / 10.0)
+                .datePredite(datePredite)
+                .vitesseAugmentation(vitesseHoraire)
+                .rSquared(regression.getRSquared())
+                .confidence(computeConfidence(regression, history.size()))
+                .message(String.format("Saturation prévue dans %.1fh (confiance: %.0f%%)",
+                        heures, computeConfidence(regression, history.size()) * 100))
+                .build();
+    }
+
+    private LinearRegressionResult performLinearRegression(List<SaturationRecord> history) {
+        int n = history.size();
+        double[] x = new double[n]; // temps en heures depuis le premier point
+        double[] y = new double[n]; // taux d'utilisation
+
+        LocalDateTime t0 = history.get(0).getTimestamp();
+        for (int i = 0; i < n; i++) {
+            x[i] = java.time.Duration.between(t0, history.get(i).getTimestamp()).toMinutes() / 60.0;
+            y[i] = history.get(i).getTauxUtilisation();
+        }
+
+        // Calcul OLS (Ordinary Least Squares)
+        double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+        for (int i = 0; i < n; i++) {
+            sumX += x[i]; sumY += y[i];
+            sumXY += x[i] * y[i]; sumX2 += x[i] * x[i];
+        }
+        double meanX = sumX / n, meanY = sumY / n;
+        double slope = (sumXY - n * meanX * meanY) / (sumX2 - n * meanX * meanX);
+        double intercept = meanY - slope * meanX;
+
+        // R² pour la confiance
+        double ssTot = 0, ssRes = 0;
+        for (int i = 0; i < n; i++) {
+            ssTot += Math.pow(y[i] - meanY, 2);
+            ssRes += Math.pow(y[i] - (slope * x[i] + intercept), 2);
+        }
+        double rSquared = ssTot == 0 ? 0 : 1 - ssRes / ssTot;
+
+        return LinearRegressionResult.builder()
+                .slope(slope).intercept(intercept).rSquared(rSquared).build();
+    }
+
+    private double computeConfidence(LinearRegressionResult r, int dataPoints) {
+        // Confiance = qualité de la régression × disponibilité des données
+        double dataFactor = Math.min(1.0, dataPoints / 24.0);
+        return Math.max(0, r.getRSquared()) * dataFactor;
+    }
+
+    private PredictionResult buildInsufficientDataResult(ZoneFeatureVector f) {
+        // Fallback : estimation naïve basée sur la tendance actuelle
+        double heuresEstimees = f.getTendance6h() > 0 ?
+                (SEUIL_SATURATION - f.getTauxUtilisation()) / (f.getTendance6h() / 6.0) : -1;
+
+        return PredictionResult.builder()
+                .zoneId(f.getZoneId())
+                .saturationPredite(heuresEstimees > 0 && heuresEstimees < 72)
+                .heuresAvantSaturation(heuresEstimees > 0 ? heuresEstimees : null)
+                .message("Historique insuffisant — estimation approximative")
+                .confidence(0.2)
+                .build();
+    }
+}

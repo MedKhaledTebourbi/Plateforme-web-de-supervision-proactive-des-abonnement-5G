@@ -1,0 +1,61 @@
+package com.example.microserviceuser.Controller;
+
+import com.example.microserviceuser.Entity.User;
+import com.example.microserviceuser.Repository.UserRepository;
+import com.example.microserviceuser.Service.auth.JwtUtils;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.*;
+@RestController
+@RequestMapping("/auth")
+public class Restcontroller {
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
+    private final JwtUtils jwtUtils;
+
+    public Restcontroller (UserRepository userRepository, PasswordEncoder passwordEncoder,
+                          AuthenticationManager authenticationManager, JwtUtils jwtUtils) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.authenticationManager = authenticationManager;
+        this.jwtUtils = jwtUtils;
+    }
+
+    @PostMapping("/register")
+    public String register(@RequestParam String username, @RequestParam String password, @RequestParam String role) {
+        if (userRepository.findByUsername(username) != null) {
+            throw new RuntimeException("User already exists");
+        }
+        User user = new User();
+        user.setUsername(username);
+        user.setPassword(passwordEncoder.encode(password));
+        user.setRole(role);
+        userRepository.save(user);
+        return "User registered successfully";
+    }
+
+    @PostMapping("/login")
+    public String login(@RequestParam String username, @RequestParam String password) {
+        User user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new RuntimeException("Invalid credentials: User not found");
+        }
+
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new RuntimeException("Invalid credentials: Incorrect password");
+        }
+
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
+
+        String token = jwtUtils.generateToken(username);
+        System.out.println("Generated token: " + token);  // Log du token généré
+        return token;
+    }
+
+}

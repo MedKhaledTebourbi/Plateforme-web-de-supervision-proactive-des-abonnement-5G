@@ -1,0 +1,18 @@
+package com.example.microserviceia.Repository;
+
+import com.example.microserviceia.entity.SaturationRecord;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.time.LocalDateTime;
+import java.util.List;
+public interface SaturationRecordRepository extends JpaRepository<SaturationRecord, Long> {
+    List<SaturationRecord> findByZoneIdAndTimestampAfterOrderByTimestamp(Long zoneId, LocalDateTime since);
+   
+    List<SaturationRecord> findByZoneIdOrderByTimestampDesc(Long zoneId);
+
+    void deleteByTimestampBefore(LocalDateTime before);
+
+    List<SaturationRecord> findByTimestampAfterOrderByTimestamp(LocalDateTime localDateTime);
+
+    List<SaturationRecord> findTopNByZoneIdOrderByTimestampDesc(Long zoneId, int limit);
+}

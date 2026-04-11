@@ -1,0 +1,321 @@
+"""
+train_model.py
+==============
+Entraîne deux modèles sur l'historique de saturation exporté par le microservice Java :
+  1. Isolation Forest  → détection d'anomalies
+  2. Prophet / LinearRegression → prédiction temporelle
+
+Usage :
+    python train_model.py --data historique.csv --output models/
+
+Le fichier CSV est exporté par l'endpoint :
+    GET /api/saturation/export/csv?heures=168   (7 derniers jours)
+"""
+
+import argparse
+import os
+import sys
+import json
+import warnings
+warnings.filterwarnings("ignore")
+
+import numpy as np
+import pandas as pd
+import joblib
+from datetime import datetime
+
+from sklearn.ensemble import IsolationForest
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import cross_val_score
+from sklearn.metrics import mean_absolute_error, r2_score
+
+# ── Prophet est optionnel (pip install prophet) ─────────────────────────────
+try:
+    from prophet import Prophet
+    PROPHET_AVAILABLE = True
+except ImportError:
+    PROPHET_AVAILABLE = False
+    print("[WARN] Prophet non installé — prédiction par régression linéaire uniquement")
+
+
+# ════════════════════════════════════════════════════════════════════
+# 1. CHARGEMENT ET NETTOYAGE DES DONNÉES
+# ════════════════════════════════════════════════════════════════════
+
+def load_and_clean(csv_path: str) -> pd.DataFrame:
+    """
+    Charge le CSV exporté par Java.
+    Colonnes attendues :
+        zone_id, zone_nom, taux_utilisation, nb_pylones_satures,
+        nb_pylones_total, anomaly_score, statut, timestamp
+    """
+    df = pd.read_csv(csv_path, parse_dates=["timestamp"])
+    df["timestamp"] = pd.to_datetime(df["timestamp"])
+
+
+    df["timestamp_str"] = df["timestamp"].dt.strftime("%Y-%m-%dT%H:%M:%S")
+    df = df.dropna(subset=["taux_utilisation", "timestamp"])
+    df = df.sort_values("timestamp").reset_index(drop=True)
+
+    # Feature engineering
+    df["ratio_satures"] = (
+                                  df["nb_pylones_satures"] / df["nb_pylones_total"].replace(0, np.nan)
+                          ).fillna(0) * 100
+
+    df["hour_of_day"] = df["timestamp"].dt.hour
+    df["day_of_week"] = df["timestamp"].dt.dayofweek
+
+    # Tendance glissante (6 dernières mesures par zone)
+    df = df.sort_values(["zone_id", "timestamp"])
+    df["tendance_6pts"] = df.groupby("zone_id")["taux_utilisation"] \
+        .transform(lambda s: s.diff(6).fillna(0))
+
+    df["taux_lag1"] = df.groupby("zone_id")["taux_utilisation"].shift(1).fillna(0)
+    df["taux_lag3"] = df.groupby("zone_id")["taux_utilisation"].shift(3).fillna(0)
+
+    print(f"[DATA] {len(df)} lignes chargées, {df['zone_id'].nunique()} zones uniques")
+    return df
+
+
+# ════════════════════════════════════════════════════════════════════
+# 2. ENTRAÎNEMENT ISOLATION FOREST (détection anomalies)
+# ════════════════════════════════════════════════════════════════════
+
+FEATURES_ISOLATION = [
+    "taux_utilisation",
+    "ratio_satures",
+    "tendance_6pts",
+    "taux_lag1",
+    "taux_lag3",
+    "hour_of_day",
+    "day_of_week",
+]
+
+def train_isolation_forest(df: pd.DataFrame, output_dir: str) -> dict:
+    """
+    Entraîne un Isolation Forest pour détecter les comportements anormaux.
+    Retourne les métriques d'évaluation.
+    """
+    X = df[FEATURES_ISOLATION].fillna(0).values
+
+    # Normalisation
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+
+    # Isolation Forest
+    # contamination : % estimé d'anomalies dans les données historiques
+    # (on considère que ~10% des snapshots sont "anormaux")
+    model = IsolationForest(
+        n_estimators=200,
+        contamination=0.10,
+        max_samples="auto",
+        random_state=42,
+        n_jobs=-1,
+    )
+    model.fit(X_scaled)
+
+    # Scores : -1 = anomalie, 1 = normal (on convertit en probabilité 0-1)
+    raw_scores = model.decision_function(X_scaled)
+    predictions = model.predict(X_scaled)
+
+    n_anomalies = (predictions == -1).sum()
+    print(f"[IsolationForest] Entraîné sur {len(X)} échantillons")
+    print(f"[IsolationForest] Anomalies détectées : {n_anomalies} ({n_anomalies/len(X)*100:.1f}%)")
+
+    # Sauvegarde
+    os.makedirs(output_dir, exist_ok=True)
+    joblib.dump(model,  os.path.join(output_dir, "isolation_forest.pkl"))
+    joblib.dump(scaler, os.path.join(output_dir, "scaler_if.pkl"))
+
+    # Sauvegarde des métadonnées (features, seuils)
+    metadata = {
+        "features": FEATURES_ISOLATION,
+        "n_samples": len(X),
+        "n_anomalies": int(n_anomalies),
+        "contamination": 0.10,
+        "trained_at": datetime.now().isoformat(),
+        "score_threshold": float(np.percentile(raw_scores, 10)),  # seuil P10
+    }
+    with open(os.path.join(output_dir, "if_metadata.json"), "w") as f:
+        json.dump(metadata, f, indent=2)
+
+    print(f"[IsolationForest] Modèle sauvegardé → {output_dir}/isolation_forest.pkl")
+    return metadata
+
+
+# ════════════════════════════════════════════════════════════════════
+# 3. ENTRAÎNEMENT MODÈLE DE PRÉDICTION PAR ZONE
+# ════════════════════════════════════════════════════════════════════
+
+def train_prediction_models(df: pd.DataFrame, output_dir: str) -> dict:
+    """
+    Pour chaque zone, entraîne :
+      - Un modèle Prophet si disponible (meilleur pour les séries temporelles)
+      - Sinon une régression linéaire + features temporelles
+
+    Sauvegarde un modèle par zone_id.
+    """
+    zone_metrics = {}
+    zones = df["zone_id"].unique()
+    pred_dir = os.path.join(output_dir, "prediction_models")
+    os.makedirs(pred_dir, exist_ok=True)
+
+    for zone_id in zones:
+        zone_df = df[df["zone_id"] == zone_id].copy().sort_values("timestamp")
+
+        if len(zone_df) < 10:
+            print(f"[Zone {zone_id}] Pas assez de données ({len(zone_df)} points) — skipped")
+            continue
+
+        if PROPHET_AVAILABLE and len(zone_df) >= 30:
+            metrics = _train_prophet(zone_id, zone_df, pred_dir)
+        else:
+            metrics = _train_linear(zone_id, zone_df, pred_dir)
+
+        zone_metrics[str(zone_id)] = metrics
+
+    # Résumé global
+    summary_path = os.path.join(pred_dir, "zone_metrics.json")
+    with open(summary_path, "w") as f:
+        json.dump(zone_metrics, f, indent=2)
+
+    print(f"[Prédiction] {len(zone_metrics)} modèles entraînés → {pred_dir}/")
+    return zone_metrics
+
+
+def _train_prophet(zone_id, zone_df: pd.DataFrame, pred_dir: str) -> dict:
+    """Entraîne Prophet sur une zone."""
+    prophet_df = zone_df[["timestamp", "taux_utilisation"]].rename(
+        columns={"timestamp": "ds", "taux_utilisation": "y"}
+    )
+
+    model = Prophet(
+        yearly_seasonality=False,
+        weekly_seasonality=True,
+        daily_seasonality=True,
+        changepoint_prior_scale=0.05,  # régularisation forte (évite overfitting)
+        interval_width=0.80,
+    )
+    model.fit(prophet_df)
+
+    # Évaluation sur les 20% derniers points
+    split = int(len(prophet_df) * 0.8)
+    train_df = prophet_df.iloc[:split]
+    test_df  = prophet_df.iloc[split:]
+
+    model_eval = Prophet(yearly_seasonality=False, weekly_seasonality=True,
+                         daily_seasonality=True, changepoint_prior_scale=0.05)
+    model_eval.fit(train_df)
+    forecast = model_eval.predict(test_df[["ds"]])
+    mae = mean_absolute_error(test_df["y"], forecast["yhat"])
+    r2  = r2_score(test_df["y"], forecast["yhat"])
+
+    # Sauvegarde
+    model_path = os.path.join(pred_dir, f"prophet_zone_{zone_id}.pkl")
+    joblib.dump(model, model_path)
+
+    metrics = {
+        "model_type": "prophet",
+        "zone_id": int(zone_id),
+        "n_samples": len(zone_df),
+        "mae": round(mae, 3),
+        "r2": round(r2, 3),
+        "trained_at": datetime.now().isoformat(),
+    }
+    print(f"[Zone {zone_id}] Prophet — MAE={mae:.2f}%, R²={r2:.3f}")
+    return metrics
+
+
+def _train_linear(zone_id, zone_df: pd.DataFrame, pred_dir: str) -> dict:
+    """
+    Entraîne une régression linéaire avec features temporelles enrichies.
+    Fallback quand Prophet n'est pas disponible ou données insuffisantes.
+    """
+    FEATURES = ["taux_lag1", "taux_lag3", "tendance_6pts",
+                "ratio_satures", "hour_of_day", "day_of_week"]
+
+    X = zone_df[FEATURES].fillna(0).values
+    y = zone_df["taux_utilisation"].values
+
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+
+    model = LinearRegression()
+    model.fit(X_scaled, y)
+
+    # Cross-validation (5-fold)
+    if len(X) >= 10:
+        cv_scores = cross_val_score(model, X_scaled, y,
+                                    cv=min(5, len(X)//2),
+                                    scoring="neg_mean_absolute_error")
+        mae = -cv_scores.mean()
+    else:
+        y_pred = model.predict(X_scaled)
+        mae = mean_absolute_error(y, y_pred)
+
+    y_pred_full = model.predict(X_scaled)
+    r2 = r2_score(y, y_pred_full)
+
+    # Sauvegarde
+    model_path  = os.path.join(pred_dir, f"linear_zone_{zone_id}.pkl")
+    scaler_path = os.path.join(pred_dir, f"scaler_zone_{zone_id}.pkl")
+    joblib.dump(model,  model_path)
+    joblib.dump(scaler, scaler_path)
+
+    metrics = {
+        "model_type": "linear",
+        "zone_id": int(zone_id),
+        "n_samples": len(zone_df),
+        "mae": round(mae, 3),
+        "r2": round(r2, 3),
+        "features": FEATURES,
+        "trained_at": datetime.now().isoformat(),
+    }
+    print(f"[Zone {zone_id}] Linear — MAE={mae:.2f}%, R²={r2:.3f}")
+    return metrics
+
+
+# ════════════════════════════════════════════════════════════════════
+# 4. POINT D'ENTRÉE
+# ════════════════════════════════════════════════════════════════════
+
+def main():
+    parser = argparse.ArgumentParser(description="Entraînement modèles saturation réseau")
+    parser.add_argument("--data",   required=True, help="Chemin vers le CSV historique")
+    parser.add_argument("--output", default="models/", help="Dossier de sortie des modèles")
+    args = parser.parse_args()
+
+    if not os.path.exists(args.data):
+        print(f"[ERREUR] Fichier introuvable : {args.data}")
+        sys.exit(1)
+
+    print("=" * 60)
+    print("  Entraînement des modèles IA de saturation réseau")
+    print("=" * 60)
+
+    df = load_and_clean(args.data)
+
+    print("\n── Isolation Forest (détection anomalies) ──")
+    if_meta = train_isolation_forest(df, args.output)
+
+    print("\n── Modèles de prédiction par zone ──")
+    zone_meta = train_prediction_models(df, args.output)
+
+    # Rapport final JSON
+    report = {
+        "trained_at": datetime.now().isoformat(),
+        "total_samples": len(df),
+        "isolation_forest": if_meta,
+        "prediction_zones": zone_meta,
+    }
+    report_path = os.path.join(args.output, "training_report.json")
+    with open(report_path, "w") as f:
+        json.dump(report, f, indent=2)
+
+    print(f"\n[OK] Rapport d'entraînement → {report_path}")
+    print("=" * 60)
+
+
+if __name__ == "__main__":
+    main()

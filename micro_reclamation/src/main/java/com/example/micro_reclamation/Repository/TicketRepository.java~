@@ -1,0 +1,21 @@
+package com.example.micro_reclamation.Repository;
+
+import com.example.micro_reclamation.Entity.Ticket;
+import com.example.micro_reclamation.Entity.TicketStatut;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface TicketRepository extends JpaRepository<Ticket, Long> {
+
+    boolean existsByZoneIdAndStatut(Long zoneId, String statut);
+
+    List<Ticket> findByRegion(String region);
+    List<Ticket> findByZoneId(Long zoneId);
+
+    List<Ticket> findByZoneNom(String zoneNom);
+
+    List<Ticket> findByStatut(TicketStatut ticketStatut);
+
+    Long countByStatut(TicketStatut s);
+}

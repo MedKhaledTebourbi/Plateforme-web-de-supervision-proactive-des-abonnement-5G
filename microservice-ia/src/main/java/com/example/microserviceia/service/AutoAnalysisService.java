@@ -1,0 +1,524 @@
+package com.example.microserviceia.service;
+
+import com.example.microserviceia.Client.MicroMapClient;
+import com.example.microserviceia.Repository.SaturationRecordRepository;
+import com.example.microserviceia.dto.SaturationReport;
+import com.example.microserviceia.dto.ZoneFeatureVector;
+import com.example.microserviceia.dto.ZoneReseauDTO;
+import com.example.microserviceia.entity.SaturationRecord;
+import com.example.microserviceia.entity.SaturationStatus;
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
+
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class AutoAnalysisService {
+
+    private final FeatureEngineeringService featureService;
+    private final PythonBridgeService pythonBridge;
+    private final SaturationRecordRepository recordRepository;
+    private final AutoCacheService cacheService;
+    private final MicroMapClient microMapClient;
+
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(10);
+
+    // État du dernier calcul
+    private volatile boolean isComputing = false;
+    private volatile LocalDateTime lastComputeTime = null;
+
+    @PostConstruct
+    public void init() {
+        // Démarrer le scheduler automatique
+        startAutoRefresh();
+        log.info("🤖 Service d'analyse automatique démarré");
+    }
+
+    // Refresh automatique toutes les 30 secondes
+    @Scheduled(fixedDelay = 30000, initialDelay = 5000)
+    public void autoRefresh() {
+        if (!isComputing) {
+            refreshDataAsync();
+        }
+    }
+
+    // Rafraîchissement asynchrone
+    @Async
+    public void refreshDataAsync() {
+        if (isComputing) {
+            log.debug("Calcul déjà en cours, skip");
+            return;
+        }
+
+        isComputing = true;
+        long start = System.currentTimeMillis();
+
+        try {
+            log.info("🔄 Refresh automatique des données...");
+            List<SaturationReport> reports = computeAllZones();
+            cacheService.putAllZones(reports);
+            lastComputeTime = LocalDateTime.now();
+            log.info("✅ Refresh terminé en {} ms", System.currentTimeMillis() - start);
+        } catch (Exception e) {
+            log.error("❌ Erreur refresh: {}", e.getMessage());
+        } finally {
+            isComputing = false;
+        }
+    }
+
+    // Calcul parallèle automatique
+    private List<SaturationReport> computeAllZones() {
+        List<ZoneReseauDTO> zones = microMapClient.getAllZones();
+
+        if (zones == null || zones.isEmpty()) {
+            log.warn("Aucune zone trouvée");
+            return Collections.emptyList();
+        }
+
+        // Batch processing automatique
+        List<CompletableFuture<SaturationReport>> futures = zones.stream()
+                .map(zone -> CompletableFuture.supplyAsync(() -> analyzeZoneAuto(zone)))
+                .collect(Collectors.toList());
+
+        // Attendre tous les résultats avec timeout global
+        try {
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                    .get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            log.warn("Timeout global, retour des résultats partiels");
+        }
+
+        return futures.stream()
+                .map(future -> {
+                    try {
+                        return future.getNow(null);
+                    } catch (Exception e) {
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    // Analyse automatique d'une zone
+    public SaturationReport analyzeZoneAuto(ZoneReseauDTO zone) {
+        Long zoneId = zone.getZone_id();
+
+        // Vérifier cache
+        SaturationReport cached = cacheService.getReport(zoneId);
+        if (cached != null && isCacheValid(cached)) {
+            return cached;
+        }
+
+        try {
+            // Récupération automatique de l'historique (limité)
+            List<SaturationRecord> historique = getHistoryAuto(zoneId);
+
+            // Extraction automatique des features
+            ZoneFeatureVector features = extractFeaturesAuto(zone, historique);
+
+            // Appel Python avec timeout automatique
+            Map<String, Object> pythonResult = callPythonWithAutoTimeout(features, historique);
+
+            // Construction automatique du rapport
+            SaturationReport report = buildReportAuto(zone, features, pythonResult);
+
+            // Mise en cache automatique
+            cacheService.putReport(zoneId, report);
+
+            return report;
+
+        } catch (Exception e) {
+            log.debug("Erreur zone {}: {}", zoneId, e.getMessage());
+            return buildFallbackReportAuto(zone);
+        }
+    }
+
+    // Récupération automatique de l'historique
+    // Remplacer la méthode getHistoryAuto
+    private List<SaturationRecord> getHistoryAuto(Long zoneId) {
+        int limit = isComputing ? 50 : 100;
+        // Utiliser la méthode native
+        return recordRepository.findTop50ByZoneIdOrderByTimestampDesc(zoneId)
+                .stream()
+                .limit(limit)
+                .collect(Collectors.toList());
+    }
+
+    // Appel Python avec timeout automatique
+    private Map<String, Object> callPythonWithAutoTimeout(ZoneFeatureVector features,
+                                                          List<SaturationRecord> historique) {
+        CompletableFuture<Map<String, Object>> future =
+                CompletableFuture.supplyAsync(() -> pythonBridge.callPredict(features, historique));
+
+        try {
+            return future.get(2, TimeUnit.SECONDS); // Timeout auto
+        } catch (TimeoutException e) {
+            log.debug("Timeout Python, fallback auto");
+            future.cancel(true);
+            return getAutoFallback(features);
+        } catch (Exception e) {
+            return getAutoFallback(features);
+        }
+    }
+
+    // Fallback automatique intelligent
+    private Map<String, Object> getAutoFallback(ZoneFeatureVector features) {
+        Map<String, Object> fallback = new HashMap<>();
+        double taux = features.getTauxUtilisation();
+
+        // Règles automatiques
+        boolean predicted = taux > 75;
+        double confidence = taux > 85 ? 0.9 : (taux > 75 ? 0.7 : 0.5);
+
+        fallback.put("prediction", Map.of(
+                "saturation_predite", predicted,
+                "heures_avant_saturation", predicted ? calculateAutoHours(taux) : null,
+                "confidence", confidence,
+                "message", getAutoMessage(taux),
+                "model_type", "auto_fallback"
+        ));
+
+        fallback.put("anomaly_detection", Map.of(
+                "is_anomaly", taux > 80,
+                "anomaly_score", -0.5,
+                "source", "auto"
+        ));
+
+        return fallback;
+    }
+
+    // Calcul automatique des heures
+    private double calculateAutoHours(double taux) {
+        if (taux >= 90) return 0;
+        if (taux >= 80) return (95 - taux) * 0.5;
+        return (90 - taux) * 1.5;
+    }
+
+    // Message automatique
+    private String getAutoMessage(double taux) {
+        if (taux >= 90) return "⚠️ Saturation critique immédiate";
+        if (taux >= 80) return "⚠️ Risque élevé de saturation";
+        if (taux >= 70) return "📈 Surveillance renforcée";
+        return "✅ Situation normale";
+    }
+
+    // Vérification automatique de validité du cache
+    private boolean isCacheValid(SaturationReport report) {
+        if (report == null) return false;
+        if (report.getTimestamp() == null) return false;
+
+        // Cache valide moins de 30 secondes
+        return Duration.between(report.getTimestamp(), LocalDateTime.now()).getSeconds() < 30;
+    }
+
+    // Extraction automatique des features
+    private ZoneFeatureVector extractFeaturesAuto(ZoneReseauDTO zone,
+                                                  List<SaturationRecord> historique) {
+        ZoneFeatureVector features = new ZoneFeatureVector();
+        features.setZoneId(zone.getZone_id());
+        features.setTauxUtilisation(zone.getTauxUtilisation());
+        features.setRatioSatures(calculateRatioAuto(zone));
+        features.setTendance6h(calculateTendanceAuto(historique));
+        return features;
+    }
+
+    private double calculateRatioAuto(ZoneReseauDTO zone) {
+        if (zone.getPylones() == null || zone.getPylones().isEmpty()) return 0;
+        long totalPylones = zone.getPylones().size();
+        // Un pylône est considéré saturé si estBloque == true OU tauxUtilisation > 85%
+        long saturePylones = zone.getPylones().stream()
+                .filter(p -> p.getEstBloque() != null && p.getEstBloque() || p.getTauxUtilisation() > 85)
+                .count();
+        if (totalPylones == 0) return 0;
+        return saturePylones * 100.0 / totalPylones;
+    }
+
+    // Remplacez la méthode getNbPylonesSatures
+    private int getNbPylonesSatures(ZoneReseauDTO zone) {
+        if (zone.getPylones() == null) return 0;
+        return (int) zone.getPylones().stream()
+                .filter(p -> p.getEstBloque() != null && p.getEstBloque() || p.getTauxUtilisation() > 85)
+                .count();
+    }
+    // Ajoutez cette méthode dans AutoAnalysisService
+    private SaturationReport buildFallbackReportAuto(ZoneReseauDTO zone) {
+        SaturationReport report = new SaturationReport();
+        report.setZoneId(zone.getZone_id());
+        report.setZoneNom(zone.getNom());
+        report.setTauxUtilisation(zone.getTauxUtilisation());
+
+        // Correction : utiliser estBloque au lieu de getStatut()
+        report.setNbPylonesSatures(zone.getPylones() != null ?
+                (int) zone.getPylones().stream()
+                        .filter(p -> p.getEstBloque() != null && p.getEstBloque())
+                        .count() : 0);
+
+        report.setNbPylonesTotal(zone.getPylones() != null ? zone.getPylones().size() : 0);
+        report.setRatioSatures(calculateRatioAuto(zone));
+        report.setTendance6h(0.0);
+        report.setSaturationPredite(zone.getTauxUtilisation() > 75);
+        report.setConfidencePrediction(0.5);
+        report.setTimestamp(LocalDateTime.now());
+        report.setStatut(determineStatusAuto(zone.getTauxUtilisation()));
+        return report;
+    }
+
+
+    private double calculateTendanceAuto(List<SaturationRecord> historique) {
+        if (historique == null || historique.size() < 2) return 0;
+
+        SaturationRecord first = historique.get(0);
+        SaturationRecord last = historique.get(historique.size() - 1);
+
+        return last.getTauxUtilisation() - first.getTauxUtilisation();
+    }
+
+    // Rapport automatique
+    private SaturationReport buildReportAuto(ZoneReseauDTO zone,
+                                             ZoneFeatureVector features,
+                                             Map<String, Object> pythonResult) {
+        SaturationReport report = new SaturationReport();
+        report.setZoneId(zone.getZone_id());
+        report.setZoneNom(zone.getNom());
+        report.setTauxUtilisation(features.getTauxUtilisation());
+        report.setRatioSatures(features.getRatioSatures());
+        report.setTendance6h(features.getTendance6h());
+        report.setTimestamp(LocalDateTime.now());
+
+        // Extraction auto des prédictions
+        if (pythonResult != null && pythonResult.containsKey("prediction")) {
+            Map<String, Object> pred = (Map<String, Object>) pythonResult.get("prediction");
+            report.setSaturationPredite((Boolean) pred.getOrDefault("saturation_predite", false));
+            report.setHeuresAvantSaturation((Double) pred.get("heures_avant_saturation"));
+            report.setConfidencePrediction((Double) pred.getOrDefault("confidence", 0.5));
+        } else {
+            report.setSaturationPredite(features.getTauxUtilisation() > 75);
+            report.setConfidencePrediction(0.5);
+        }
+
+        // Statut auto
+        report.setStatut(determineStatusAuto(report.getTauxUtilisation()));
+
+        return report;
+    }
+
+    private SaturationStatus determineStatusAuto(double taux) {
+        if (taux >= 90) return SaturationStatus.CRITIQUE;
+        if (taux >= 75) return SaturationStatus.SATURE;
+        if (taux >= 60) return SaturationStatus.ATTENTION;
+        return SaturationStatus.NORMAL;
+    }
+
+    // Démarrer le scheduler automatique
+    private void startAutoRefresh() {
+        scheduler.scheduleAtFixedRate(() -> {
+            if (!isComputing) {
+                refreshDataAsync();
+            }
+        }, 5, 30, TimeUnit.SECONDS);
+    }
+
+    // Méthode publique pour récupérer les données (toujours rapide)
+    public List<SaturationReport> getLatestReports() {
+        // Essayer d'abord le cache
+        List<SaturationReport> cached = cacheService.getAllZones();
+
+        if (cached != null && !cached.isEmpty()) {
+            log.info("📦 Cache hit: {} zones", cached.size());
+            if (needRefresh()) {
+                refreshDataAsync();
+            }
+            return cached;
+        }
+
+        log.info("🔄 Cache miss - Génération automatique...");
+
+        // Générer les données à partir des zones réelles
+        List<ZoneReseauDTO> zones = microMapClient.getAllZones();
+
+        if (zones == null || zones.isEmpty()) {
+            log.warn("❌ Aucune zone disponible");
+            return new ArrayList<>();
+        }
+
+        // Traitement synchrone de toutes les zones
+        List<SaturationReport> reports = new ArrayList<>();
+        for (ZoneReseauDTO zone : zones) {
+            try {
+                SaturationReport report = generateReportFromZone(zone);
+                reports.add(report);
+            } catch (Exception e) {
+                log.error("Erreur zone {}: {}", zone.getZone_id(), e.getMessage());
+            }
+        }
+
+        if (!reports.isEmpty()) {
+            cacheService.putAllZones(reports);
+            log.info("✅ {} zones générées automatiquement", reports.size());
+        }
+
+        return reports;
+    }
+    // Ajoutez cette méthode dans AutoAnalysisService.java
+    private List<SaturationReport> createDemoData() {
+        log.warn("📊 Génération automatique des données à partir des zones existantes");
+        List<SaturationReport> demos = new ArrayList<>();
+
+        // Récupérer les vraies zones
+        List<ZoneReseauDTO> zones = microMapClient.getAllZones();
+
+        if (zones == null || zones.isEmpty()) {
+            log.error("❌ Impossible de générer les données : aucune zone disponible");
+            return demos;
+        }
+
+        // Générer un rapport pour CHAQUE zone réelle
+        for (ZoneReseauDTO zone : zones) {
+            SaturationReport report = generateReportFromZone(zone);
+            demos.add(report);
+        }
+
+        if (!demos.isEmpty()) {
+            cacheService.putAllZones(demos);
+            log.info("✅ {} zones traitées automatiquement", demos.size());
+        }
+
+        return demos;
+    }
+
+    // Génère un rapport automatique à partir d'une zone réelle
+    private SaturationReport generateReportFromZone(ZoneReseauDTO zone) {
+        SaturationReport report = new SaturationReport();
+        report.setZoneId(zone.getZone_id());
+        report.setZoneNom(zone.getNom());
+        report.setTimestamp(LocalDateTime.now());
+
+        // 1. TAUX D'UTILISATION - calcul automatique
+        double taux = calculateTauxAutomatique(zone);
+        report.setTauxUtilisation(taux);
+
+        // 2. PYLÔNES - calcul automatique
+        int[] pylonesData = calculatePylonesAutomatique(zone);
+        report.setNbPylonesTotal(pylonesData[0]);
+        report.setNbPylonesSatures(pylonesData[1]);
+        report.setRatioSatures(pylonesData[0] > 0 ? (pylonesData[1] * 100.0 / pylonesData[0]) : 0);
+
+        // 3. STATUT - détermination automatique
+        report.setStatut(determineStatutAutomatique(taux, pylonesData[1], pylonesData[0]));
+
+        // 4. PRÉDICTION - calcul automatique
+        report.setSaturationPredite(taux > 70 || pylonesData[1] > pylonesData[0] * 0.5);
+        report.setConfidencePrediction(calculateConfianceAutomatique(zone, taux));
+
+        // 5. TENDANCE - calcul automatique
+        report.setTendance6h(calculateTendanceAutomatique(zone));
+
+        return report;
+    }
+
+    // Calcule automatiquement le taux d'utilisation
+    private double calculateTauxAutomatique(ZoneReseauDTO zone) {
+        // Priorité au taux de la zone
+        if (zone.getTauxUtilisation() > 0) {
+            return zone.getTauxUtilisation();
+        }
+
+        // Sinon, calcul à partir des pylônes
+        if (zone.getPylones() != null && !zone.getPylones().isEmpty()) {
+            return zone.getPylones().stream()
+                    .mapToDouble(p -> p.getTauxUtilisation() != null ? p.getTauxUtilisation() : 0)
+                    .filter(t -> t > 0)
+                    .average()
+                    .orElse(50.0);
+        }
+
+        // Valeur par défaut réaliste
+        return 50.0;
+    }
+
+    // Calcule automatiquement les statistiques des pylônes
+    private int[] calculatePylonesAutomatique(ZoneReseauDTO zone) {
+        int total = 0;
+        int satures = 0;
+
+        if (zone.getPylones() != null && !zone.getPylones().isEmpty()) {
+            total = zone.getPylones().size();
+            satures = (int) zone.getPylones().stream()
+                    .filter(p -> {
+                        boolean estBloque = p.getEstBloque() != null && p.getEstBloque();
+                        boolean tauxDepasse = p.getTauxUtilisation() != null && p.getTauxUtilisation() > 85;
+                        return estBloque || tauxDepasse;
+                    })
+                    .count();
+        } else {
+            // Si pas de pylônes, estimation basée sur le taux
+            total = 10; // Valeur par défaut
+            double taux = zone.getTauxUtilisation() > 0 ? zone.getTauxUtilisation() : 50;
+            satures = (int) (total * (Math.max(0, taux - 60) / 40));
+        }
+
+        return new int[]{total, satures};
+    }
+
+    // Détermine automatiquement le statut
+    private SaturationStatus determineStatutAutomatique(double taux, int pylonesSatures, int pylonesTotal) {
+        double ratioSatures = pylonesTotal > 0 ? (pylonesSatures * 100.0 / pylonesTotal) : 0;
+
+        if (taux >= 90 || ratioSatures >= 80) return SaturationStatus.CRITIQUE;
+        if (taux >= 75 || ratioSatures >= 50) return SaturationStatus.SATURE;
+        if (taux >= 60 || ratioSatures >= 30) return SaturationStatus.ATTENTION;
+        return SaturationStatus.NORMAL;
+    }
+
+    // Calcule automatiquement la confiance
+    private double calculateConfianceAutomatique(ZoneReseauDTO zone, double taux) {
+        double confidence = 0.7;
+
+        // Plus on a de données, plus la confiance est haute
+        if (zone.getPylones() != null && zone.getPylones().size() > 10) {
+            confidence += 0.15;
+        } else if (zone.getPylones() != null && zone.getPylones().size() > 5) {
+            confidence += 0.1;
+        }
+
+        // Ajustement basé sur le taux
+        if (taux > 85 || taux < 20) {
+            confidence += 0.1; // Cas extrêmes plus faciles à prédire
+        }
+
+        return Math.min(confidence, 0.95);
+    }
+
+    // Calcule automatiquement la tendance
+    private double calculateTendanceAutomatique(ZoneReseauDTO zone) {
+        if (zone.getPylones() == null || zone.getPylones().isEmpty()) {
+            return 0.0;
+        }
+
+        // Simule une tendance basée sur la variation des taux des pylônes
+        // (dans une version réelle, on comparerait avec l'historique)
+        double tauxMoyen = zone.getPylones().stream()
+                .mapToDouble(p -> p.getTauxUtilisation() != null ? p.getTauxUtilisation() : 50)
+                .average()
+                .orElse(50);
+
+        // Tendance entre -5 et +5
+        return (tauxMoyen - 50) / 10;
+    }
+    private boolean needRefresh() {
+        if (lastComputeTime == null) return true;
+        return Duration.between(lastComputeTime, LocalDateTime.now()).getSeconds() > 25;
+    }
+}

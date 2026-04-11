@@ -1,0 +1,38 @@
+package com.example.micro_map.Entity;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.persistence.*;
+import lombok.*;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
+import java.util.List;
+
+@Entity
+@Table(name = "client")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Client {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String adresse;
+
+    // ex: 50, 100 (Mbps)
+    private Double typeAbonnement;
+    // coordonnées calculées automatiquement
+    private Double latitude;
+    private Double longitude;
+
+    @ManyToOne
+    @JoinColumn(name = "pylone_id")
+    @JsonIgnoreProperties("clients")
+    private Pylone pylone;
+}

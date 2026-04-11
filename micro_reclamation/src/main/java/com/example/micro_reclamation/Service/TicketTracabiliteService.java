@@ -1,0 +1,334 @@
+package com.example.micro_reclamation.Service;
+
+
+import com.example.micro_reclamation.Entity.*;
+import com.example.micro_reclamation.Repository.TicketHistoriqueRepository;
+import com.example.micro_reclamation.Repository.TicketRepository;
+import com.example.micro_reclamation.Repository.reclamationRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class TicketTracabiliteService {
+
+    private final TicketRepository ticketRepository;
+    private final TicketHistoriqueRepository historiqueRepository;
+    private final reclamationRepository reclamationRepository;
+    private final ObjectMapper objectMapper;
+
+    /**
+     * Création d'un ticket avec traçabilité complète
+     */
+    @Transactional
+    public Ticket creerTicketAvecTracabilite(Ticket ticket, Long utilisateurId, String utilisateurNom) {
+        log.info("Création du ticket pour la zone: {} par {}", ticket.getZoneNom(), utilisateurNom);
+
+        // Validation
+        if (ticket.getStatut() == null) {
+            ticket.setStatut(TicketStatut.OUVERT);
+        }
+
+        // Sauvegarde du ticket
+        Ticket savedTicket = ticketRepository.save(ticket);
+
+        // Création de l'historique
+        creerHistorique(
+                savedTicket,
+                null,
+                ticket.getStatut().name(),
+                "CRÉATION",
+                "Ticket créé automatiquement suite à " + ticket.getNombreReclamations() + " réclamations",
+                utilisateurId,
+                utilisateurNom,
+                preparerDetailsCreation(ticket)
+        );
+
+        return savedTicket;
+    }
+
+    /**
+     * Mise à jour du statut avec traçabilité avancée
+     */
+    @Transactional
+    public Ticket updateStatutTicketAvance(Long ticketId, TicketStatut nouveauStatut,
+                                           Long technicienId, String technicienNom,
+                                           String commentaire) {
+
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new RuntimeException("Ticket non trouvé: " + ticketId));
+
+        TicketStatut ancienStatut = ticket.getStatut();
+
+        // Validation des transitions de statut
+        validerTransitionStatut(ancienStatut, nouveauStatut);
+
+        // Enregistrement des dates importantes
+        if (TicketStatut.EN_COURS.equals(nouveauStatut) && ticket.getDateDebutTraitement() == null) {
+            ticket.setDateDebutTraitement(LocalDateTime.now());
+            log.info("Début du traitement du ticket {} par {}", ticketId, technicienNom);
+        }
+
+        if (TicketStatut.CLOS.equals(nouveauStatut)) {
+            ticket.setDateFinTraitement(LocalDateTime.now());
+            log.info("Clôture du ticket {} par {}", ticketId, technicienNom);
+
+            // Calcul de la durée de traitement
+            if (ticket.getDateDebutTraitement() != null) {
+                long dureeMinutes = ChronoUnit.MINUTES.between(
+                        ticket.getDateDebutTraitement(),
+                        ticket.getDateFinTraitement()
+                );
+                log.info("Durée de traitement du ticket {}: {} minutes", ticketId, dureeMinutes);
+            }
+        }
+
+        // Mise à jour du ticket
+        ticket.setStatut(nouveauStatut);
+        ticket.setUpdatedBy(technicienId);
+        ticket.setUpdatedByName(technicienNom);
+        ticket.setDateMaj(LocalDateTime.now());
+
+        Ticket updatedTicket = ticketRepository.save(ticket);
+
+        // Création de l'historique
+        creerHistorique(
+                ticket,
+                ancienStatut.name(),
+                nouveauStatut.name(),
+                "CHANGEMENT_STATUT",
+                commentaire != null ? commentaire : "Changement de statut",
+                technicienId,
+                technicienNom,
+                preparerDetailsChangementStatut(ancienStatut, nouveauStatut, commentaire)
+        );
+
+        // Actions spécifiques selon le statut
+        if (TicketStatut.CLOS.equals(nouveauStatut)) {
+            supprimerReclamationsDeZoneAvecTrace(ticket.getZoneNom(), technicienId, technicienNom);
+        }
+
+        return updatedTicket;
+    }
+
+    /**
+     * Ajout d'une intervention sur le ticket
+     */
+    @Transactional
+    public Ticket ajouterIntervention(Long ticketId, String intervention,
+                                      Long technicienId, String technicienNom) {
+
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new RuntimeException("Ticket non trouvé: " + ticketId));
+
+        // ✅ Protection contre intervention null/undefined
+        String descriptionFinale = (intervention != null && !intervention.equals("undefined") && !intervention.isEmpty())
+                ? intervention
+                : "Intervention sans description";
+
+        creerHistorique(
+                ticket,
+                ticket.getStatut().name(),
+                ticket.getStatut().name(),
+                "INTERVENTION",
+                descriptionFinale,
+                technicienId,
+                technicienNom,
+                preparerDetailsIntervention(descriptionFinale)
+        );
+
+        return ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new RuntimeException("Ticket non trouvé"));
+    }
+
+    /**
+     * Récupération de l'historique complet d'un ticket
+     */
+    public List<TicketHistorique> getHistoriqueTicket(Long ticketId) {
+        return historiqueRepository.findByTicketIdOrderByDateActionDesc(ticketId);
+    }
+
+    /**
+     * Récupération des métriques de traçabilité
+     */
+    public TicketMetricsDTO getTicketMetrics(Long ticketId) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new RuntimeException("Ticket non trouvé: " + ticketId));
+
+        List<TicketHistorique> historique = historiqueRepository.findByTicketIdOrderByDateActionAsc(ticketId);
+
+        // Calcul du temps de première réponse
+        Long tempsPremiereReponse = null;
+        Optional<TicketHistorique> premiereAction = historique.stream()
+                .filter(h -> !"CRÉATION".equals(h.getAction()))
+                .findFirst();
+
+        if (premiereAction.isPresent() && ticket.getDateCreation() != null) {
+            tempsPremiereReponse = ChronoUnit.MINUTES.between(
+                    ticket.getDateCreation(),
+                    premiereAction.get().getDateAction()
+            );
+        }
+
+        // Calcul du temps de traitement
+        Long dureeTraitement = null;
+        if (ticket.getDateDebutTraitement() != null && ticket.getDateFinTraitement() != null) {
+            dureeTraitement = ChronoUnit.MINUTES.between(
+                    ticket.getDateDebutTraitement(),
+                    ticket.getDateFinTraitement()
+            );
+        } else if (ticket.getDateDebutTraitement() != null && TicketStatut.CLOS.equals(ticket.getStatut())) {
+            dureeTraitement = ChronoUnit.MINUTES.between(
+                    ticket.getDateDebutTraitement(),
+                    LocalDateTime.now()
+            );
+        }
+
+        // Comptage des changements de statut
+        long nbChangementsStatut = historique.stream()
+                .filter(h -> "CHANGEMENT_STATUT".equals(h.getAction()))
+                .count();
+
+        // Liste des actions
+        List<TicketMetricsDTO.ActionDTO> actions = historique.stream()
+                .map(h -> TicketMetricsDTO.ActionDTO.builder()
+                        .date(h.getDateAction())
+                        .action(h.getAction())
+                        .utilisateur(h.getUtilisateurNom())
+                        .details(h.getDescription())
+                        .build())
+                .collect(Collectors.toList());
+
+        return TicketMetricsDTO.builder()
+                .ticketId(ticket.getId())
+                .zoneNom(ticket.getZoneNom())
+                .region(ticket.getRegion())
+                .dateCreation(ticket.getDateCreation())
+                .dateDebutTraitement(ticket.getDateDebutTraitement())
+                .dateFinTraitement(ticket.getDateFinTraitement())
+                .dureeTraitementMinutes(dureeTraitement)
+                .dureePremiereReponseMinutes(tempsPremiereReponse)
+                .nombreChangementsStatut((int) nbChangementsStatut)
+                .nombreInterventions(actions.size())
+                .actions(actions)
+                .build();
+    }
+
+    /**
+     * Statistiques globales de traçabilité
+     */
+    public Map<String, Object> getGlobalTracabiliteStats() {
+        Map<String, Object> stats = new HashMap<>();
+
+        // Temps moyen de traitement
+        List<Ticket> ticketsClos = ticketRepository.findByStatut(TicketStatut.CLOS);
+        double tempsMoyenTraitement = ticketsClos.stream()
+                .filter(t -> t.getDateDebutTraitement() != null && t.getDateFinTraitement() != null)
+                .mapToLong(t -> ChronoUnit.MINUTES.between(t.getDateDebutTraitement(), t.getDateFinTraitement()))
+                .average()
+                .orElse(0);
+
+        stats.put("tempsMoyenTraitementMinutes", tempsMoyenTraitement);
+        stats.put("ticketsTraites", ticketsClos.size());
+
+        // Répartition par statut
+        Map<String, Long> repartitionStatuts = Arrays.stream(TicketStatut.values())
+                .collect(Collectors.toMap(
+                        TicketStatut::name,  // ✅ au lieu de TicketStatut::getLibelle
+                        s -> ticketRepository.countByStatut(s)
+                ));
+        stats.put("repartitionStatuts", repartitionStatuts);
+
+        // Tickets par technicien
+        Map<String, Long> ticketsParTechnicien = ticketRepository.findAll().stream()
+                .filter(t -> t.getUpdatedByName() != null)
+                .collect(Collectors.groupingBy(
+                        Ticket::getUpdatedByName,
+                        Collectors.counting()
+                ));
+        stats.put("ticketsParTechnicien", ticketsParTechnicien);
+
+        return stats;
+    }
+
+    // Méthodes privées utilitaires
+
+    private void creerHistorique(Ticket ticket, String ancienStatut, String nouveauStatut,
+                                 String action, String description, Long userId,
+                                 String userName, String detailsJson) {
+        TicketHistorique historique = TicketHistorique.builder()
+                .ticket(ticket)
+                .ancienStatut(ancienStatut)
+                .nouveauStatut(nouveauStatut)
+                .action(action)
+                .description(description)
+                .utilisateurId(userId)
+                .utilisateurNom(userName)
+                .detailsJson(detailsJson)
+                .build();
+
+        historiqueRepository.save(historique);
+        log.info("Historique créé pour ticket {}: {} par {}", ticket.getId(), action, userName);
+    }
+
+    private void validerTransitionStatut(TicketStatut ancien, TicketStatut nouveau) {
+        // Logique de validation des transitions
+        if (ancien == TicketStatut.CLOS && nouveau != TicketStatut.CLOS) {
+            throw new IllegalStateException("Impossible de modifier un ticket clos");
+        }
+
+        if (ancien == TicketStatut.ANNULE && nouveau != TicketStatut.ANNULE) {
+            throw new IllegalStateException("Impossible de réactiver un ticket annulé");
+        }
+    }
+
+    private String preparerDetailsCreation(Ticket ticket) {
+        try {
+            Map<String, Object> details = new HashMap<>();
+            details.put("nombreReclamations", ticket.getNombreReclamations());
+            details.put("typePanne", ticket.getTypePanne());
+            details.put("priorite", ticket.getPriorite());
+            return objectMapper.writeValueAsString(details);
+        } catch (Exception e) {
+            return "{}";
+        }
+    }
+
+    private String preparerDetailsChangementStatut(TicketStatut ancien, TicketStatut nouveau, String commentaire) {
+        try {
+            Map<String, Object> details = new HashMap<>();
+            details.put("ancienStatut", ancien != null ? ancien.getLibelle() : null);
+            details.put("nouveauStatut", nouveau.getLibelle());
+            details.put("commentaire", commentaire);
+            return objectMapper.writeValueAsString(details);
+        } catch (Exception e) {
+            return "{}";
+        }
+    }
+
+    private String preparerDetailsIntervention(String intervention) {
+        try {
+            Map<String, Object> details = new HashMap<>();
+            details.put("intervention", intervention);
+            details.put("date", LocalDateTime.now().toString());
+            return objectMapper.writeValueAsString(details);
+        } catch (Exception e) {
+            return "{}";
+        }
+    }
+
+    private void supprimerReclamationsDeZoneAvecTrace(String zoneNom, Long userId, String userName) {
+        log.info("Suppression des réclamations pour la zone {} par {}", zoneNom, userName);
+        // Implémentation de la suppression avec trace
+        // ...
+    }
+}

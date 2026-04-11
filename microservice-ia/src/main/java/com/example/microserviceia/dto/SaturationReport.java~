@@ -1,0 +1,4 @@
+package com.example.microserviceia.dto;
+
+public class SaturationReport {
+}

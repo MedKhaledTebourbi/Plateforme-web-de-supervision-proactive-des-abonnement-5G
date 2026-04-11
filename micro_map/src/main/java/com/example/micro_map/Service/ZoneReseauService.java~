@@ -1,0 +1,20 @@
+package com.example.micro_map.Service;
+
+
+import com.example.micro_map.Entity.ZoneReseau;
+import com.example.micro_map.Repository.ZoneReseauRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class ZoneReseauService {
+
+    private final ZoneReseauRepository repository;
+
+    public List<ZoneReseau> getAllZones() {
+        return repository.findAll();
+    }
+}

@@ -1,0 +1,13 @@
+package com.example.micro_reclamation.Repository;
+
+import com.example.micro_reclamation.Entity.Chantier;
+import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.List;
+
+public interface ChantierRepository extends JpaRepository<Chantier, Long> {
+    List<Chantier> findByPyloneId(Long pyloneId);
+    List<Chantier> findByStatut(String statut);
+    List<Chantier> findByRegion(String region);
+    List<Chantier> findByTechnicienId(Long technicienId);
+    boolean existsByPyloneIdAndStatut(Long pyloneId, String statut);
+}

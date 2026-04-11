@@ -1,0 +1,22 @@
+package com.example.micro_reclamation.Service;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.List;
+import java.util.Map;
+
+@Service
+@RequiredArgsConstructor
+public class UserClient {
+
+    private final RestTemplate restTemplate;
+
+    public List<Map<String, Object>> getTechniciensByRegion(String region) {
+        return restTemplate.getForObject(
+                "http://localhost:8082/api/users/techniciens?region=" + region,
+                List.class
+        );
+    }
+}

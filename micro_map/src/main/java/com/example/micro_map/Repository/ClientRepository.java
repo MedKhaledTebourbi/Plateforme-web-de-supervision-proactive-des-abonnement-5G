@@ -1,0 +1,13 @@
+package com.example.micro_map.Repository;
+
+import com.example.micro_map.Entity.Client;
+import com.example.micro_map.Entity.Pylone;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface ClientRepository extends JpaRepository<Client, Long> {
+
+    List<Client> findByAdresse(String adresse);
+    List<Client> findByPyloneIsNull();
+}
