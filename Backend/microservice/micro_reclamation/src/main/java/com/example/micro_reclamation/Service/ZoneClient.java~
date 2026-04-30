@@ -1,0 +1,22 @@
+package com.example.micro_reclamation.Service;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.List;
+import java.util.Map;
+
+@Service
+@RequiredArgsConstructor
+public class ZoneClient {
+
+    private final RestTemplate restTemplate;
+
+    public List<Map<String, Object>> getZones() {
+        return restTemplate.getForObject(
+                "http://localhost:8081/api/zones",
+                List.class
+        );
+    }
+}

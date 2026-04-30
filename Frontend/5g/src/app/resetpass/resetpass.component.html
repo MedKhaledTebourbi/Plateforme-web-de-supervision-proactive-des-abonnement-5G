@@ -1,0 +1,116 @@
+<div class="login-page">
+  <!-- Background avec image floue -->
+  <div class="telecom-background">
+    <div class="background-image"></div>
+    <div class="network-pattern"></div>
+    <div class="dots-pattern"></div>
+  </div>
+
+  <!-- Logo Tunisie Télécom en haut à gauche -->
+  <div class="header-logo">
+    <div class="logo-circle">
+      <img src="/assets/images/z.png" alt="Tunisie Télécom Logo" class="logo-img">
+    </div>
+    <span class="brand-name">Tunisie Télécom</span>
+  </div>
+
+  <!-- Formulaire de réinitialisation centré -->
+  <div class="login-box">
+    <div class="login-header">
+      <div class="header-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+      </div>
+      <h1>Créer un nouveau mot de passe</h1>
+      <p>Choisissez un mot de passe sécurisé</p>
+    </div>
+
+    <form>
+      <!-- Message de succès -->
+      <div class="success-box" *ngIf="resetMessage">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        {{ resetMessage }}
+      </div>
+
+      <!-- Message d'erreur -->
+      <div class="error-box" *ngIf="resetError">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        {{ resetError }}
+      </div>
+
+      <div class="input-group">
+        <label for="new-password">
+          <svg class="label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          Nouveau mot de passe
+        </label>
+        <div class="input-wrapper">
+          <input 
+            type="password" 
+            id="new-password" 
+            [(ngModel)]="newPassword" 
+            name="newPassword" 
+            placeholder="Entrez votre nouveau mot de passe"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label for="confirm-password">
+          <svg class="label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+          Confirmer le mot de passe
+        </label>
+        <div class="input-wrapper">
+          <input 
+            type="password" 
+            id="confirm-password" 
+            [(ngModel)]="confirmPassword" 
+            name="confirmPassword" 
+            placeholder="Confirmez votre mot de passe"
+            required
+          />
+        </div>
+      </div>
+
+      <!-- Affichage username -->
+      <div class="user-info" *ngIf="username">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <span>Utilisateur : <strong>{{ username }}</strong></span>
+      </div>
+
+      <button 
+        type="button" 
+        class="login-btn" 
+        (click)="sendVerificationCode()" 
+        [routerLink]="['/code']" 
+        [queryParams]="{ username: username, token: token, newPassword: newPassword }">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M22 2L11 13"></path>
+          <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
+        </svg>
+        Envoyer le code de vérification
+      </button>
+    </form>
+
+    <div class="footer-text">
+      <p>&copy; 2026 Tunisie Télécom - Tous droits réservés</p>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,477 @@
+package com.example.micro_map.Service;
+
+import com.example.micro_map.Entity.Client;
+import com.example.micro_map.Entity.Pylone;
+import com.example.micro_map.Repository.ClientRepository;
+import com.example.micro_map.Repository.PyloneRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class AffectationService {
+
+    private final ClientRepository clientRepository;
+    private final PyloneRepository pyloneRepository;
+    private final GeocodingService geocodingService;
+    private final RestTemplate restTemplate;
+    private final ChantierClient chantierClient;
+    private boolean estPyloneBloque(Long pyloneId) {
+        try {
+            Boolean result = restTemplate.getForObject(
+                    "http://localhost:8083/api/chantiers/check/" + pyloneId,
+                    Boolean.class
+            );
+            return Boolean.TRUE.equals(result);
+        } catch (Exception e) {
+            System.err.println("⚠️ Erreur vérification chantier: " + e.getMessage());
+            return false; // on laisse passer si erreur (optionnel)
+        }
+    }
+
+    public void affecterClientsAutomatiquement() {
+
+        List<Client> clients = clientRepository.findAll();
+        List<Pylone> pylones = pyloneRepository.findAll();
+
+        System.out.println("\n╔════════════════════════════════════════╗");
+        System.out.println("║     🚀 AFFECTATION AUTOMATIQUE         ║");
+        System.out.println("╚════════════════════════════════════════╝");
+
+        int affectes = 0, reaffectes = 0, nonAffectes = 0, erreurs = 0;
+
+        for (Client client : clients) {
+
+            // ✅ Si déjà affecté et pylône NON bloqué → skip
+            if (client.getPylone() != null) {
+                if (!estPyloneBloque(client.getPylone().getId())) {
+                    continue;
+                }
+                System.out.println("♻️  Client " + client.getId()
+                        + " — pylône bloqué, réaffectation...");
+            }
+
+            try {
+                // ✅ Géocodage si nécessaire
+                if (client.getLatitude() == null || client.getLongitude() == null) {
+                    Thread.sleep(1100);
+                    double[] coords = geocodingService
+                            .getCoordinatesFromAddress(client.getAdresse());
+                    client.setLatitude(coords[0]);
+                    client.setLongitude(coords[1]);
+                    client = clientRepository.saveAndFlush(client);
+                }
+
+                double latClient = client.getLatitude();
+                double lonClient = client.getLongitude();
+
+                // ✅ Conversion Mbps → Gbps (stockage uniforme en Gbps)
+                double consommationGbps = (client.getTypeAbonnement() != null)
+                        ? client.getTypeAbonnement() / 1000.0
+                        : 0.0;
+
+                Pylone meilleurPylone = null;
+                double distanceMin = Double.MAX_VALUE;
+
+                for (Pylone pylone : pylones) {
+
+                    // ❌ Ignorer pylône bloqué
+                    if (estPyloneBloque(pylone.getId())) continue;
+
+                    // ✅ Initialiser charge si null
+                    if (pylone.getChargeActuelle() == null) {
+                        pylone.setChargeActuelle(0.0);
+                    }
+
+                    double distance = calculDistance(
+                            latClient, lonClient,
+                            pylone.getLatitude(), pylone.getLongitude()
+                    );
+
+                    if (distance <= pylone.getRayonCouverture()) {
+                        // ✅ chargeActuelle est en Gbps, capaciteMax aussi
+                        double chargeActuelleGbps = pylone.getChargeActuelle();
+                        if (chargeActuelleGbps + consommationGbps
+                                <= pylone.getCapaciteMax()) {
+                            if (distance < distanceMin) {
+                                distanceMin = distance;
+                                meilleurPylone = pylone;
+                            }
+                        }
+                    }
+                }
+
+                // ✅ Affectation
+                if (meilleurPylone != null) {
+
+                    double ancienneChargeGbps = meilleurPylone.getChargeActuelle();
+                    double nouvelleChargeGbps = ancienneChargeGbps + consommationGbps;
+                    double tauxOccupation = (nouvelleChargeGbps
+                            / meilleurPylone.getCapaciteMax()) * 100;
+
+                    client.setPylone(meilleurPylone);
+                    // ✅ On stocke en Gbps
+                    meilleurPylone.setChargeActuelle(nouvelleChargeGbps);
+
+                    pyloneRepository.save(meilleurPylone);
+                    clientRepository.save(client);
+                    affectes++;
+
+                    System.out.println("\n┌─────────────────────────────────────────");
+                    System.out.printf ("│ ✅ Client %-5d → Pylône %-15s%n",
+                            client.getId(), meilleurPylone.getNom());
+                    System.out.println("├─────────────────────────────────────────");
+                    System.out.printf ("│ 📶 Abonnement    : %.0f Mbps (%.3f Gbps)%n",
+                            client.getTypeAbonnement(), consommationGbps);
+                    System.out.printf ("│ 📊 Charge avant  : %.3f Gbps%n",
+                            ancienneChargeGbps);
+                    System.out.printf ("│ 📈 Charge après  : %.3f / %.3f Gbps%n",
+                            nouvelleChargeGbps, meilleurPylone.getCapaciteMax());
+                    System.out.printf ("│ 🔋 Taux occupé   : %.1f%%%n",
+                            tauxOccupation);
+                    System.out.printf ("│ 📍 Distance      : %.2f m%n",
+                            distanceMin);
+                    System.out.println("└─────────────────────────────────────────");
+
+                } else {
+                    nonAffectes++;
+                    System.out.printf("❌ Client %-5d — aucun pylône disponible%n",
+                            client.getId());
+                }
+
+            } catch (Exception e) {
+                erreurs++;
+                System.err.printf("⚠️  Erreur client %d : %s%n",
+                        client.getId(), e.getMessage());
+            }
+        }
+
+        // ✅ Résumé final
+        System.out.println("\n╔════════════════════════════════════════╗");
+        System.out.println("║        📊 RÉSUMÉ AFFECTATION           ║");
+        System.out.println("╠════════════════════════════════════════╣");
+        System.out.printf ("║  ✅ Affectés          : %-15d ║%n", affectes);
+        System.out.printf ("║  ❌ Non affectés      : %-15d ║%n", nonAffectes);
+        System.out.printf ("║  ⚠️  Erreurs           : %-15d ║%n", erreurs);
+        System.out.println("╠════════════════════════════════════════╣");
+        System.out.println("║        📡 ÉTAT DES PYLÔNES             ║");
+        System.out.println("╠════════════════════════════════════════╣");
+
+        for (Pylone pylone : pylones) {
+            double charge = pylone.getChargeActuelle() != null
+                    ? pylone.getChargeActuelle() : 0.0;
+            double capacite = pylone.getCapaciteMax() != null
+                    ? pylone.getCapaciteMax() : 1.0;
+            double taux = (charge / capacite) * 100;
+            boolean bloque = estPyloneBloque(pylone.getId());
+
+            String barre = genererBarreProgression(taux);
+            String statut = bloque ? "🔒 BLOQUÉ"
+                    : taux >= 90 ? "🔴 CRITIQUE"
+                    : taux >= 75 ? "🟠 SATURÉ"
+                    : taux >= 50 ? "🟡 ATTENTION"
+                    : "🟢 NORMAL";
+
+            System.out.printf("║  %-18s %s%n",
+                    pylone.getNom(), statut);
+            System.out.printf("║  %s %.1f%%%n", barre, taux);
+            System.out.printf("║  Charge: %.3f / %.3f Gbps%n",
+                    charge, capacite);
+            System.out.println("║─────────────────────────────────────────");
+        }
+        System.out.println("╚════════════════════════════════════════╝\n");
+    }
+
+    // ✅ Barre de progression visuelle
+    private String genererBarreProgression(double taux) {
+        int filled = (int) (taux / 10);
+        StringBuilder barre = new StringBuilder("[");
+        for (int i = 0; i < 10; i++) {
+            barre.append(i < filled ? "█" : "░");
+        }
+        barre.append("]");
+        return barre.toString();
+    }
+
+        // ✅ AFFICHAGE FINAL DES RÉSULTATS (avec vérification des nulls)
+
+
+    // ✅ Méthode pour afficher le résumé des affectations (CORRIGÉE)
+    private void afficherResume(List<Client> dejaAffectes, List<Client> nouvellementAffectes,
+                                List<Client> nonAffectes, List<Client> erreurGeocodage, List<Pylone> pylones) {
+
+        System.out.println("\n\n========================================");
+        System.out.println("📊 RÉSUMÉ DE L'AFFECTATION");
+        System.out.println("========================================");
+        System.out.println("✅ Clients déjà affectés: " + dejaAffectes.size());
+        System.out.println("✅ Clients nouvellement affectés: " + nouvellementAffectes.size());
+        System.out.println("❌ Clients non affectés (hors portée): " + nonAffectes.size());
+        System.out.println("⚠️ Clients en erreur de géocodage: " + erreurGeocodage.size());
+        System.out.println("========================================\n");
+
+        // Afficher les clients en erreur de géocodage
+        if (!erreurGeocodage.isEmpty()) {
+            System.out.println("⚠️ LISTE DES CLIENTS EN ERREUR DE GÉOCODAGE:");
+            System.out.println("--------------------------------------------------");
+            for (Client client : erreurGeocodage) {
+                System.out.println("ID: " + client.getId());
+                System.out.println("   Adresse: " + client.getAdresse());
+                System.out.println("   Abonnement: " + client.getTypeAbonnement() + " Mbps");
+                System.out.println("   ❌ Adresse non trouvée par Nominatim");
+                System.out.println("--------------------------------------------------");
+            }
+        }
+
+        // Afficher les clients non affectés (hors portée) avec leurs coordonnées
+        if (!nonAffectes.isEmpty()) {
+            System.out.println("\n🔍 LISTE DES CLIENTS NON AFFECTÉS (HORS PORTÉE):");
+            System.out.println("--------------------------------------------------");
+            for (Client client : nonAffectes) {
+                // ✅ Vérifier que les coordonnées ne sont pas null
+                Double lat = client.getLatitude();
+                Double lon = client.getLongitude();
+
+                System.out.println("ID: " + client.getId());
+                System.out.println("   Adresse: " + client.getAdresse());
+
+                if (lat != null && lon != null) {
+                    System.out.println("   Position: lat=" + lat + ", lon=" + lon);
+                    System.out.println("   Abonnement: " + client.getTypeAbonnement() + " Mbps");
+
+                    // Trouver le pylône le plus proche pour information
+                    Pylone pylonePlusProche = null;
+                    double distanceMin = Double.MAX_VALUE;
+                    for (Pylone pylone : pylones) {
+                        double distance = calculDistance(lat, lon,
+                                pylone.getLatitude(), pylone.getLongitude());
+                        if (distance < distanceMin) {
+                            distanceMin = distance;
+                            pylonePlusProche = pylone;
+                        }
+                    }
+                    if (pylonePlusProche != null) {
+                        System.out.println("   📡 Pylône le plus proche: " + pylonePlusProche.getNom() +
+                                " (distance: " + String.format("%.2f", distanceMin) + "m, rayon: " +
+                                pylonePlusProche.getRayonCouverture() + "m)");
+                        if (distanceMin <= pylonePlusProche.getRayonCouverture()) {
+                            System.out.println("      ⚠️ À portée mais capacité insuffisante!");
+                        } else {
+                            System.out.println("      ❌ Hors de portée (manque " +
+                                    String.format("%.2f", distanceMin - pylonePlusProche.getRayonCouverture()) + "m)");
+                        }
+                    }
+                } else {
+                    System.out.println("   ❌ Coordonnées non disponibles (géocodage échoué)");
+                }
+                System.out.println("--------------------------------------------------");
+            }
+        }
+
+        // Afficher l'état des pylônes après affectation
+        System.out.println("\n📡 ÉTAT DES PYLÔNES APRÈS AFFECTATION:");
+        System.out.println("--------------------------------------------------");
+        for (Pylone pylone : pylones) {
+            int nbClients = 0;
+            for (Client client : nouvellementAffectes) {
+                if (client.getPylone() != null && client.getPylone().getId().equals(pylone.getId())) {
+                    nbClients++;
+                }
+            }
+            for (Client client : dejaAffectes) {
+                if (client.getPylone() != null && client.getPylone().getId().equals(pylone.getId())) {
+                    nbClients++;
+                }
+            }
+            System.out.println("Pylône " + pylone.getNom() +
+                    " - Charge: " + (pylone.getChargeActuelle() != null ? pylone.getChargeActuelle() : 0) +
+                    " / " + pylone.getCapaciteMax() + " Gbps" +
+                    " - Clients affectés: " + nbClients);
+        }
+        System.out.println("========================================\n");
+        System.out.println("\n🔒 PYLÔNES BLOQUÉS PAR DES CHANTIERS:");
+        System.out.println("--------------------------------------------------");
+        for (Pylone pylone : pylones) {
+            if (estPyloneBloque(pylone.getId())) {
+                System.out.println("   ⚠️ " + pylone.getNom() + " (ID: " + pylone.getId() + ") - BLOQUÉ");
+            }
+        }
+        System.out.println("========================================\n");
+    }
+
+
+    // 📏 Calcul distance
+    public double calculDistance(double lat1, double lon1, double lat2, double lon2) {
+        final int R = 6_371_000; // Rayon de la Terre en mètres
+
+        double latDistance = Math.toRadians(lat2 - lat1);
+        double lonDistance = Math.toRadians(lon2 - lon1);
+
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+
+        return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+    }
+    public void affecterUnClient(Long clientId) throws InterruptedException {
+
+        Client client = clientRepository.findById(clientId).orElse(null);
+        if (client == null) {
+            log.warn("⚠️  Client introuvable pour affectation — id={}", clientId);
+            return;
+        }
+
+        List<Pylone> pylones = pyloneRepository.findAll();
+
+        // ── Charger les pylônes bloqués UNE SEULE FOIS ────────
+        Set<Long> pylonesBloques = chargerPylonesBloquesEnCache(pylones);
+
+        // ── Si déjà affecté et pylône non bloqué → skip ───────
+        if (client.getPylone() != null
+                && !pylonesBloques.contains(client.getPylone().getId())) {
+            log.info("⏭️  Client {} déjà affecté à pylône {} non bloqué → skip",
+                    clientId, client.getPylone().getNom());
+            return;
+        }
+
+        if (client.getPylone() != null) {
+            log.info("♻️  Client {} — pylône bloqué, réaffectation...", clientId);
+        }
+
+        // ── Géocoder si nécessaire ─────────────────────────────
+        if (client.getLatitude() == null || client.getLongitude() == null) {
+            log.info("🗺️  Géocodage client {} — adresse: {}", clientId, client.getAdresse());
+            Thread.sleep(1100); // respecter limite API Nominatim
+            double[] coords = geocodingService.getCoordinatesFromAddress(client.getAdresse());
+            if (coords == null) {
+                log.warn("⚠️  Géocodage échoué pour client {} — adresse: {}",
+                        clientId, client.getAdresse());
+                return;
+            }
+            client.setLatitude(coords[0]);
+            client.setLongitude(coords[1]);
+            client = clientRepository.saveAndFlush(client);
+            log.info("✅ Géocodage OK — lat={} lon={}", client.getLatitude(), client.getLongitude());
+        }
+
+        // ── Trouver le meilleur pylône ─────────────────────────
+        double consommationGbps = client.getTypeAbonnement() != null
+                ? client.getTypeAbonnement() / 1000.0 : 0.0;
+
+        Pylone meilleurPylone = null;
+        double distanceMin    = Double.MAX_VALUE;
+
+        for (Pylone pylone : pylones) {
+
+            // Ignorer pylônes bloqués (depuis le cache)
+            if (pylonesBloques.contains(pylone.getId())) continue;
+
+            if (pylone.getChargeActuelle() == null) pylone.setChargeActuelle(0.0);
+
+            double distance = calculDistance(
+                    client.getLatitude(), client.getLongitude(),
+                    pylone.getLatitude(),  pylone.getLongitude()
+            );
+
+            if (distance <= pylone.getRayonCouverture()) {
+                double capaciteRestante = pylone.getCapaciteMax()
+                        - pylone.getChargeActuelle();
+                if (consommationGbps <= capaciteRestante && distance < distanceMin) {
+                    distanceMin    = distance;
+                    meilleurPylone = pylone;
+                }
+            }
+        }
+
+        // ── Affecter ──────────────────────────────────────────
+        if (meilleurPylone != null) {
+            double chargeAvant  = meilleurPylone.getChargeActuelle();
+            double chargeApres  = chargeAvant + consommationGbps;
+            double taux         = (chargeApres / meilleurPylone.getCapaciteMax()) * 100;
+
+            client.setPylone(meilleurPylone);
+            meilleurPylone.setChargeActuelle(chargeApres);
+
+            pyloneRepository.save(meilleurPylone);
+            clientRepository.save(client);
+
+            log.info("✅ Client {} → pylône {} | {:.1f}% occupé | dist={:.1f}m",
+                    clientId, meilleurPylone.getNom(), taux, distanceMin);
+        } else {
+            log.warn("❌ Client {} — aucun pylône disponible pour adresse: {}",
+                    clientId, client.getAdresse());
+        }
+    }
+    private Set<Long> chargerPylonesBloquesEnCache(List<Pylone> pylones) {
+        return pylones.stream()
+                .filter(p -> {
+                    try {
+                        Boolean bloque = restTemplate.getForObject(
+                                "http://localhost:8083/api/chantiers/check/" + p.getId(),
+                                Boolean.class
+                        );
+                        return Boolean.TRUE.equals(bloque);
+                    } catch (Exception e) {
+                        log.warn("⚠️  Chantier check échoué pylône {} : {}",
+                                p.getId(), e.getMessage());
+                        return false;
+                    }
+                })
+                .map(Pylone::getId)
+                .collect(Collectors.toSet());
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // LOG ÉTAT PYLÔNES
+    // ─────────────────────────────────────────────────────────
+    private void logEtatPylones(List<Pylone> pylones, Set<Long> pylonesBloques) {
+        pylones.forEach(p -> {
+            double charge  = p.getChargeActuelle() != null ? p.getChargeActuelle() : 0.0;
+            double capacite = p.getCapaciteMax() != null ? p.getCapaciteMax() : 1.0;
+            double taux    = (charge / capacite) * 100;
+            boolean bloque = pylonesBloques.contains(p.getId());
+
+            String statut = bloque        ? "BLOQUÉ"
+                    : taux >= 90          ? "CRITIQUE"
+                    : taux >= 75          ? "SATURÉ"
+                    : taux >= 50          ? "ATTENTION"
+                    : "NORMAL";
+
+            log.info("📡 {} — {:.1f}% ({:.3f}/{:.3f} Gbps) [{}]",
+                    p.getNom(), taux, charge, capacite, statut);
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // CALCUL DISTANCE (Haversine — en mètres)
+    // ─────────────────────────────────────────────────────────
+// Dans AffectationService
+    public void recalculerToutesLesCharges() {
+        List<Pylone> pylones = pyloneRepository.findAll();
+
+        for (Pylone pylone : pylones) {
+            // Remettre à zéro
+            pylone.setChargeActuelle(0.0);
+
+            // Recalculer depuis les clients réellement affectés
+            if (pylone.getClients() != null) {
+                double totalGbps = pylone.getClients().stream()
+                        .filter(c -> c.getTypeAbonnement() != null)
+                        .mapToDouble(c -> c.getTypeAbonnement() / 1000.0)
+                        .sum();
+                pylone.setChargeActuelle(Math.round(totalGbps * 100.0) / 100.0);
+            }
+
+            pyloneRepository.save(pylone);
+            System.out.printf("✅ %s → %.2f Gbps%n",
+                    pylone.getNom(), pylone.getChargeActuelle());
+        }
+    }
+}

@@ -1,0 +1,87 @@
+<div class="login-page">
+  <!-- Background avec image floue -->
+  <div class="telecom-background">
+    <div class="background-image"></div>
+    <div class="network-pattern"></div>
+    <div class="dots-pattern"></div>
+  </div>
+
+  <!-- Logo Tunisie Télécom en haut à gauche -->
+  <div class="header-logo">
+    <div class="logo-circle">
+      <img src="/assets/images/z.png" alt="Tunisie Télécom Logo" class="logo-img">
+    </div>
+    <span class="brand-name">Tunisie Télécom</span>
+  </div>
+
+  <!-- Formulaire de vérification centré -->
+  <div class="login-box">
+    <div class="login-header">
+      <div class="header-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <path d="M9 9h.01M9 12h.01M9 15h.01M12 9h.01M12 12h.01M12 15h.01M15 9h.01M15 12h.01M15 15h.01"></path>
+        </svg>
+      </div>
+      <h1>Code de vérification</h1>
+      <p>Entrez le code reçu par email</p>
+    </div>
+
+    <form>
+      <!-- Message d'erreur -->
+      <div class="error-box" *ngIf="resetError">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        {{ resetError }}
+      </div>
+
+      <div class="input-group">
+        <label for="verification-code">
+          <svg class="label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+          </svg>
+          Code de vérification
+        </label>
+        <div class="input-wrapper">
+          <input 
+            type="text" 
+            id="verification-code" 
+            [(ngModel)]="verificationCode" 
+            name="verificationCode" 
+            placeholder="Entrez le code à 6 chiffres"
+            maxlength="6"
+            required
+          />
+        </div>
+        <div class="input-hint">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span>Vérifiez votre boîte email pour le code</span>
+        </div>
+      </div>
+
+      <button 
+        type="button" 
+        class="login-btn" 
+        (click)="handleResetButton()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        Valider le code
+      </button>
+    </form>
+
+    <div class="footer-text">
+      <p>&copy; 2026 Tunisie Télécom - Tous droits réservés</p>
+    </div>
+  </div>
+</div>

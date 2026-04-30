@@ -1,0 +1,64 @@
+package com.example.micro_user.Service.auth;
+
+
+
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+@Component
+public class SessionManager {
+
+    private final Map<String, Long> activeUsers = new ConcurrentHashMap<>();
+
+    private static final long SESSION_TIMEOUT = 15 * 60 * 1000;
+
+    public void updateUserActivity(String username) {
+        activeUsers.put(username, System.currentTimeMillis());
+    }
+
+    public boolean isUserOnline(String username) {
+        Long lastActivity = activeUsers.get(username);
+
+        if (lastActivity == null) return false;
+
+        long now = System.currentTimeMillis();
+
+        if ((now - lastActivity) > SESSION_TIMEOUT) {
+            activeUsers.remove(username);
+            return false;
+        }
+
+        return true;
+    }
+
+    public Long getLastActivity(String username) {
+        return activeUsers.get(username);
+    }
+
+    public void removeUser(String username) {
+        activeUsers.remove(username);
+    }
+
+    public Map<String, Long> getAllActiveUsers() {
+        return activeUsers;
+    }
+    @Scheduled(fixedRate = 60000)
+    public void cleanInactiveUsers() {
+        long now = System.currentTimeMillis();
+
+        activeUsers.entrySet().removeIf(entry ->
+                now - entry.getValue() > SESSION_TIMEOUT
+        );
+    }
+    public void setUserOnline(String username, boolean online) {
+        if (online) {
+            activeUsers.put(username, System.currentTimeMillis());
+        } else {
+            activeUsers.remove(username);
+        }
+    }
+}

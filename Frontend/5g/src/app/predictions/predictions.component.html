@@ -1,0 +1,78 @@
+ <div class="page">
+      <h1>Prédictions de saturation</h1>
+      <p class="subtitle">Zones avec saturation imminente classées par urgence</p>
+
+      <div class="filters">
+        <label>
+          Horizon max (h) :
+          <input type="number" [(ngModel)]="horizonFilter"
+                 min="1" max="72" (change)="applyFilters()"/>
+        </label>
+        <label>
+          Confiance min (%) :
+          <input type="number" [(ngModel)]="confidenceFilter"
+                 min="0" max="100" (change)="applyFilters()"/>
+        </label>
+      </div>
+
+      <div class="no-pred" *ngIf="filtered.length === 0 && !loading">
+        Aucune saturation prévue dans les critères sélectionnés.
+      </div>
+
+      <div class="pred-list">
+        <div class="pred-card" *ngFor="let r of filtered">
+
+          <!-- Urgence visuelle -->
+          <div class="urgence-bar"
+               [style.background]="urgenceColor(r.heuresAvantSaturation)">
+            <span class="urgence-label">
+              {{ r.heuresAvantSaturation | number:'1.0-1' }}h
+            </span>
+          </div>
+
+          <div class="pred-content">
+            <div class="pred-header">
+              <h3>{{ r.zoneNom }}</h3>
+              <app-status-badge [status]="r.statut"/>
+            </div>
+
+            <div class="pred-meta">
+              <span>Taux actuel :
+                <strong>{{ r.tauxUtilisation | number:'1.0-1' }}%</strong>
+              </span>
+              <span>Tendance 6h :
+                <strong [class.text-danger]="r.tendance6h > 10">
+                  {{ r.tendance6h > 0 ? '+' : '' }}{{ r.tendance6h | number:'1.0-1' }}%
+                </strong>
+              </span>
+              <span>Pylônes sat. :
+                <strong>{{ r.nbPylonesSatures }}/{{ r.nbPylonesTotal }}</strong>
+              </span>
+            </div>
+
+            <div class="pred-date">
+              Saturation prévue le
+              <strong>{{ r.datePredicteSaturation | date:'EEEE dd MMMM à HH:mm' }}</strong>
+            </div>
+
+            <p class="pred-msg">{{ r.messagePrediction }}</p>
+
+            <!-- Barre de confiance -->
+            <div class="conf-row">
+              <span>Confiance du modèle :</span>
+              <div class="conf-track">
+                <div class="conf-fill"
+                     [style.width.%]="r.confidencePrediction * 100"
+                     [style.background]="confidenceColor(r.confidencePrediction)">
+                </div>
+              </div>
+              <span>{{ r.confidencePrediction | percent:'1.0-0' }}</span>
+            </div>
+          </div>
+
+          <button class="btn-action" [routerLink]="['/zones', r.zoneId]">
+            Analyser ↗
+          </button>
+        </div>
+      </div>
+    </div>

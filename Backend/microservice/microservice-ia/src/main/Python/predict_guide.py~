@@ -1,0 +1,159 @@
+"""
+predict_guide.py
+================
+Reçoit un ticket JSON sur stdin → retourne le guide technicien complet.
+"""
+
+import sys, json, pickle, os, warnings
+import numpy as np
+import scipy.sparse as sp
+warnings.filterwarnings("ignore")
+
+ZONE_POP_MAP    = {"FAIBLE": 0, "MOYENNE": 1, "HAUTE": 2, "TRES_HAUTE": 3}
+TYPES_PANNE_ALL = [
+    "PERTE_SIGNAL_5G", "DEGRADATION_DEBIT", "HANDOVER_ECHEC",
+    "INTERFERENCE_COCANAL", "COUVERTURE_INSUFFISANTE",
+    "PANNE_BBU", "PANNE_RRH", "PANNE_ANTENNE", "PANNE_TRANSPORT",
+    "PANNE_ALIMENTATION", "PANNE_AMF", "PANNE_UPF", "PANNE_SMF",
+    "PANNE_CORE_SLICE", "COUPURE_FIBRE", "SATURATION_BACKHAUL",
+    "LATENCE_ELEVEE", "INTRUSION_RESEAU", "MISE_A_JOUR_ECHOUEE",
+    "SURCHARGE_CELLULE", "PANNE_CLIMATISATION", "INONDATION_SITE",
+    "VANDALISME_PYLONE", "PANNE_GROUPE_ELECTROGENE",
+]
+
+REGIONS_ALL = [
+    "TUNIS", "ARIANA", "BEN_AROUS", "MANOUBA", "NABEUL",
+    "ZAGHOUAN", "BIZERTE", "BEJA", "JENDOUBA", "KEF",
+    "SILIANA", "KAIROUAN", "KASSERINE", "SIDI_BOUZID",
+    "SOUSSE", "MONASTIR", "MAHDIA", "SFAX", "GABES",
+    "MEDENINE", "TATAOUINE", "GAFSA", "TOZEUR", "KEBILI",
+]
+URGENCES        = ["FAIBLE", "MOYENNE", "HAUTE", "TRES_HAUTE"]
+
+
+def load_artifacts(models_dir: str) -> dict:
+    names = ["model","type_enc","region_enc","action_enc",
+             "urgence_enc","scaler","tfidf","base_connaissance"]
+    arts = {}
+    for n in names:
+        path = os.path.join(models_dir, f"guide_{n}.pkl")
+        with open(path, "rb") as f:
+            arts[n] = pickle.load(f)
+    return arts
+
+
+def get_urgence(nb_rec: int, zone_pop: str) -> str:
+    score = 0
+    if nb_rec > 100: score += 3
+    elif nb_rec > 50: score += 2
+    elif nb_rec > 20: score += 1
+    pop_score = {"FAIBLE": 0, "MOYENNE": 1, "HAUTE": 2, "TRES_HAUTE": 3}
+    score += pop_score.get(zone_pop, 0)
+    if score >= 5: return "TRES_HAUTE"
+    if score >= 3: return "HAUTE"
+    if score >= 1: return "MOYENNE"
+    return "FAIBLE"
+
+
+def safe_encode(enc, val, known):
+    v = str(val).upper()
+    if v not in known: v = known[0]
+    return int(enc.transform([v])[0])
+
+
+def predict(data: dict, arts: dict) -> dict:
+    type_panne  = str(data.get("typePanne",  "RESEAU")).upper()
+    zone_pop    = str(data.get("zonePopulation", "MOYENNE")).upper()
+    nb_rec      = int(data.get("nombreReclamations", 1))
+    description = str(data.get("description", ""))
+    heure       = int(data.get("heure", 12))
+
+    urgence = get_urgence(nb_rec, zone_pop)
+
+    # ── ML prediction ──
+    type_enc    = arts["type_enc"]
+    urgence_enc = arts["urgence_enc"]
+    action_enc  = arts["action_enc"]
+    scaler      = arts["scaler"]
+    tfidf       = arts["tfidf"]
+    model       = arts["model"]
+
+    X_struct = np.array([[
+        safe_encode(type_enc, type_panne, TYPES_PANNE_ALL),
+        ZONE_POP_MAP.get(zone_pop, 1),
+        nb_rec,
+        heure,
+        safe_encode(urgence_enc, urgence, URGENCES),
+    ]])
+    X_struct_s = scaler.transform(X_struct)
+    X_text     = tfidf.transform([description])
+    X          = sp.hstack([sp.csr_matrix(X_struct_s), X_text])
+
+    y_pred      = model.predict(X)[0]
+    y_proba     = model.predict_proba(X)[0]
+    action_pred = str(action_enc.inverse_transform([y_pred])[0])
+    confidence  = float(y_proba[y_pred])
+
+    # ── Base de connaissance : guide complet ──
+    base = arts["base_connaissance"]
+    guide = {}
+    if type_panne in base and urgence in base[type_panne]:
+        guide = base[type_panne][urgence]
+    elif type_panne in base:
+        first_key = list(base[type_panne].keys())[0]
+        guide = base[type_panne][first_key]
+
+    # ── Priorité action selon urgence ──
+    priorite_map = {
+        "TRES_HAUTE": "URGENTE",
+        "HAUTE":      "HAUTE",
+        "MOYENNE":    "NORMALE",
+        "FAIBLE":     "BASSE"
+    }
+
+    return {
+        "ticketId":        data.get("ticketId"),
+        "typePanne":       type_panne,
+        "urgence":         urgence,
+        "action":          guide.get("action", action_pred),
+        "solution":        guide.get("solution", ""),
+        "etapes":          guide.get("etapes", []),
+        "priorite_action": priorite_map.get(urgence, "NORMALE"),
+        "temps_estime":    guide.get("temps_estime", "30-60 min"),
+        "automatisable":   guide.get("automatisable", False),
+        "outils":          guide.get("outils", []),
+        "raison":          f"{zone_pop} population, {nb_rec} réclamations, urgence {urgence}",
+        "confidence_ml":   round(confidence, 3),
+        "model_version":   "1.0",
+    }
+
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--stdin",      action="store_true")
+    parser.add_argument("--models_dir", default="models/")
+    args = parser.parse_args()
+
+    try:
+        raw  = sys.stdin.read().strip() if args.stdin else sys.argv[-1]
+        data = json.loads(raw)
+        arts = load_artifacts(args.models_dir)
+        result = predict(data, arts)
+        print(json.dumps(result, ensure_ascii=False))
+        sys.stdout.flush()
+    except Exception as e:
+        print(json.dumps({
+            "error":    str(e),
+            "action":   "DIAGNOSTIC_RESEAU",
+            "solution": "Vérifier logs et diagnostiquer manuellement",
+            "etapes":   ["Analyser logs", "Contacter NOC", "Escalader si nécessaire"],
+            "priorite_action": "NORMALE",
+            "temps_estime": "30-60 min",
+            "automatisable": False,
+            "outils": [],
+            "raison": "Fallback — erreur modèle",
+            "confidence_ml": 0.0,
+            "model_version": "1.0",
+        }, ensure_ascii=False))
+        sys.stdout.flush()

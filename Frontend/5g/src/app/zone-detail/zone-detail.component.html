@@ -1,0 +1,137 @@
+<div class="page" *ngIf="report && zone">
+
+  <!-- Header zone -->
+  <header class="zone-header">
+    <button class="btn-back" routerLink="/dashboard">← Retour</button>
+    <div>
+      <h1>{{ zone.nom }}</h1>
+      <p class="subtitle">{{ zone.description }}</p>
+    </div>
+    <app-status-badge [status]="report.statut" style="align-self:center"/>
+  </header>
+
+  <!-- KPIs -->
+  <div class="kpis">
+    <app-gauge [value]="report.tauxUtilisation" label="Utilisation zone"/>
+    <div class="kpi-list">
+      <div class="kpi">
+        <span class="kpi-label">Bande passante max</span>
+        <span class="kpi-val">{{ zone.bandePassanteMax }} Mbps</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label">Charge actuelle</span>
+        <span class="kpi-val">{{ zone.chargeActuelle }} Mbps</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label">Pylônes saturés</span>
+        <span class="kpi-val"
+              [class.danger]="report.ratioSatures > 50">
+          {{ report.nbPylonesSatures }}/{{ report.nbPylonesTotal }}
+        </span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label">Score anomalie</span>
+        <span class="kpi-val">{{ report.anomalyScore | number:'1.0-3' }}</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label">Tendance 6h</span>
+        <span class="kpi-val"
+              [class.danger]="report.tendance6h > 10">
+          {{ report.tendance6h > 0 ? '+' : '' }}{{ report.tendance6h | number:'1.0-1' }}%
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bloc prédiction -->
+  <section class="prediction-block" *ngIf="report.saturationPredite">
+    <div class="prediction-icon">⚠</div>
+    <div>
+      <h3>Saturation prévue dans {{ report.heuresAvantSaturation | number:'1.0-1' }}h</h3>
+      <p>{{ report.datePredicteSaturation | date:'EEEE dd MMMM yyyy à HH:mm' }}</p>
+      <p class="pred-message">{{ report.messagePrediction }}</p>
+      <div class="confidence-bar">
+        <span>Confiance :</span>
+        <div class="conf-track">
+          <div class="conf-fill"
+               [style.width.%]="report.confidencePrediction * 100">
+          </div>
+        </div>
+        <span>{{ report.confidencePrediction | percent:'1.0-0' }}</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sélecteur de période + graphique -->
+  <section class="chart-section">
+    <div class="chart-header">
+      <h2>Historique de saturation</h2>
+      <div class="period-btns">
+        <button *ngFor="let p of periods"
+                [class.active]="activePeriod === p.value"
+                (click)="loadHistory(p.value)">
+          {{ p.label }}
+        </button>
+      </div>
+    </div>
+    <canvas #histChart height="80"></canvas>
+  </section>
+
+  <!-- Tableau des pylônes -->
+  <section class="pylones-section">
+    <h2>Pylônes de la zone</h2>
+    <div class="pylones-grid">
+      <div class="pylone-card"
+           *ngFor="let p of zone.pylones"
+           [class.pylone--sature]="p.tauxUtilisation >= 80"
+           [class.pylone--bloque]="p.estBloque">
+        <div class="pylone-header">
+          <strong>{{ p.nom }}</strong>
+          <span class="pylone-badge"
+                [class.badge-ok]="p.tauxUtilisation < 80"
+                [class.badge-warn]="p.tauxUtilisation >= 80">
+            {{ p.tauxUtilisation >= 80 ? 'Saturé' : 'Normal' }}
+          </span>
+        </div>
+        <app-gauge [value]="p.tauxUtilisation" label="Charge pylône"/>
+        <div class="pylone-info">
+          <span>{{ p.chargeActuelle | number:'1.0-1' }} /
+                {{ p.capaciteMax }} Mbps</span>
+          <span *ngIf="p.estBloque" class="bloque-tag">Bloqué</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- Bloc résultat IA Python -->
+<section class="ia-block" *ngIf="iaResult">
+  <h2><span class="section-tag">IA</span> Résultat IA (Python)</h2>
+
+  <div class="ia-row">
+    <span class="ia-label">Score anomalie</span>
+    <span class="ia-val"
+          [class.danger]="isAnomaly">
+      {{ anomalyScore | number:'1.0-3' }}
+      <small>({{ isAnomaly ? 'Anomalie détectée' : 'Normal' }})</small>
+    </span>
+  </div>
+
+  <div class="ia-row">
+    <span class="ia-label">Modèle utilisé</span>
+    <span class="ia-val">{{ predModel }}</span>
+  </div>
+
+  <div class="ia-row" *ngIf="iaResult?.prediction?.saturation_predite">
+    <span class="ia-label">Saturation prévue</span>
+    <span class="ia-val danger">
+      dans {{ iaResult.prediction.heures_avant_saturation | number:'1.0-1' }}h
+      (confiance {{ iaResult.prediction.confidence | percent:'1.0-0' }})
+    </span>
+  </div>
+
+  <p class="ia-message">{{ iaResult?.prediction?.message }}</p>
+</section>
+
+<div class="loading" *ngIf="!report">Chargement...</div>

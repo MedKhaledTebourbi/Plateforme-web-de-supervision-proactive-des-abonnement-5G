@@ -1,0 +1,169 @@
+package com.example.micro_map.Controller;
+
+import com.example.micro_map.Entity.Client;
+import com.example.micro_map.Entity.ContratEvent;
+import com.example.micro_map.Entity.Pylone;
+import com.example.micro_map.Repository.ClientRepository;
+import com.example.micro_map.Repository.ContratTraiteRepository;
+import com.example.micro_map.Service.AffectationService;
+import com.example.micro_map.Service.ContratProducer;
+import com.example.micro_map.Service.GeocodingService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/affectation")
+@RequiredArgsConstructor
+
+@Slf4j
+public class AffectationController {
+
+    private final AffectationService affectationService;
+    private final GeocodingService geocodingService;
+    private final ClientRepository clientRepository;
+    private final ContratProducer contratProducer;
+    private final ContratTraiteRepository contratTraiteRepository;
+
+    @PostMapping("/auto")
+    public String lancerAffectation() {
+        affectationService.affecterClientsAutomatiquement();
+        return "Affectation terminée avec succès";
+    }
+    @GetMapping
+    public List<Client> getAll() {
+        return clientRepository.findAll();
+    }
+    @GetMapping("/test-geocoding")
+    public ResponseEntity<String> testGeocoding() {
+        try {
+            double[] coords = geocodingService.getCoordinatesFromAddress(
+                    "Avenue Habib Bourguiba, Tunis, Tunisie"
+            );
+            return ResponseEntity.ok("✅ lat=" + coords[0] + " lon=" + coords[1]);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("❌ Erreur: " + e.getMessage());
+        }
+    }
+
+
+    // ✅ Nouveau client
+    // ── ContratController.java ─────────────────────────────────────────
+
+    @PostMapping("/annuler")
+    public ResponseEntity<Map<String, Object>> annulerContrat(
+            @RequestBody ContratEvent event) {
+
+        if (event.getContratId() == null) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "statut",  "ERREUR",
+                    "message", "contratId est obligatoire"
+            ));
+        }
+
+        // Vérifier que le client existe
+        if (!clientRepository.existsByContratId(event.getContratId())) {
+            return ResponseEntity.status(404).body(Map.of(
+                    "statut",    "INTROUVABLE",
+                    "message",   "Aucun client trouvé pour ce contratId",
+                    "contratId", event.getContratId()
+            ));
+        }
+
+        // ✅ Vérifier uniquement si une ANNULATION a déjà été traitée
+        if (contratTraiteRepository.existsByContratIdAndTypeEvenement(
+                event.getContratId(), "ANNULATION")) {
+            log.warn("⚠️  Annulation déjà traitée pour ContratID={}", event.getContratId());
+            return ResponseEntity.status(409).body(Map.of(
+                    "statut",    "DEJA_TRAITE",
+                    "message",   "Cette annulation a déjà été traitée",
+                    "contratId", event.getContratId()
+            ));
+        }
+
+        event.setTypeEvenement("ANNULATION");
+        contratProducer.envoyerEvenement(event);
+
+        log.info("📤 ANNULATION envoyée — ContratID={}", event.getContratId());
+
+        return ResponseEntity.ok(Map.of(
+                "statut",    "ENVOYE",
+                "message",   "Événement ANNULATION envoyé dans Kafka",
+                "contratId", event.getContratId()
+        ));
+    }
+
+    @PostMapping("/nouveau")
+    public ResponseEntity<Map<String, Object>> nouveauClient(
+            @RequestBody ContratEvent event) {
+
+        if (event.getContratId() == null) { /* ... */ }
+        if (event.getAdresse() == null || event.getAdresse().isBlank()) { /* ... */ }
+        if (event.getTypeAbonnement() == null || event.getTypeAbonnement() <= 0) { /* ... */ }
+
+        // ✅ Vérifier uniquement si un NOUVEAU_CLIENT a déjà été traité
+        if (contratTraiteRepository.existsByContratIdAndTypeEvenement(
+                event.getContratId(), "NOUVEAU_CLIENT")) {
+            return ResponseEntity.status(409).body(Map.of(
+                    "statut",    "DEJA_TRAITE",
+                    "message",   "Ce contrat a déjà été traité",
+                    "contratId", event.getContratId()
+            ));
+        }
+
+        if (clientRepository.existsByContratId(event.getContratId())) {
+            return ResponseEntity.status(409).body(Map.of(
+                    "statut",    "DEJA_EXISTANT",
+                    "message",   "Un client existe déjà pour ce contrat",
+                    "contratId", event.getContratId()
+            ));
+        }
+
+        event.setTypeEvenement("NOUVEAU_CLIENT");
+        contratProducer.envoyerEvenement(event);
+
+        log.info("📤 NOUVEAU_CLIENT envoyé — ContratID={} | adresse={}",
+                event.getContratId(), event.getAdresse());
+
+        return ResponseEntity.ok(Map.of(
+                "statut",          "ENVOYE",
+                "message",         "Événement NOUVEAU_CLIENT envoyé dans Kafka",
+                "contratId",       event.getContratId(),
+                "adresse",         event.getAdresse(),
+                "typeAbonnement",  event.getTypeAbonnement() + " Mbps"
+        ));
+    }
+
+    // ──────────────────────────────────────────────────────────
+    // GET /api/contrats/statut/{contratId}
+    // Vérifier le statut d'un contrat
+    // ──────────────────────────────────────────────────────────
+    @GetMapping("/statut/{contratId}")
+    public ResponseEntity<Map<String, Object>> statutContrat(
+            @PathVariable Long contratId) {
+
+        boolean clientExiste  = clientRepository.existsByContratId(contratId);
+        boolean dejaTrait     = contratTraiteRepository.existsByContratId(contratId);
+
+        return ResponseEntity.ok(Map.of(
+                "contratId",     contratId,
+                "clientExiste",  clientExiste,
+                "dejaTrait",     dejaTrait,
+                "statut",        clientExiste ? "ACTIF"
+                        : dejaTrait    ? "ANNULE"
+                        :                "INCONNU"
+        ));
+    }
+
+    // ──────────────────────────────────────────────────────────
+    // GET /api/contrats/test
+    // ──────────────────────────────────────────────────────────
+    @GetMapping("/test")
+    public ResponseEntity<String> test() {
+        return ResponseEntity.ok("✅ micro-map Kafka opérationnel");
+    }
+}

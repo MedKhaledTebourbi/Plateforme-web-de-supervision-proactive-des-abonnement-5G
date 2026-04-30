@@ -1,0 +1,415 @@
+<div class="app-layout">
+
+  <!-- ══════════════ SIDEBAR ══════════════ -->
+  <aside class="sidebar" [class.collapsed]="sidebarCollapsed">
+    <div class="sidebar-header">
+      <div class="logo-block">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <span class="logo-text">TuniNet</span>
+      </div>
+      <button class="collapse-btn" (click)="sidebarCollapsed = !sidebarCollapsed" title="Réduire">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </button>
+    </div>
+
+    <nav class="nav-links">
+      <a class="nav-item" routerLink="/dashboard" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+        </span>
+        <span class="nav-label">Tableau de bord</span>
+      </a>
+
+      <a class="nav-item" routerLink="/map" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+            <line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/>
+          </svg>
+        </span>
+        <span class="nav-label">Carte Réseau</span>
+        <span class="nav-badge nav-badge--live">Live</span>
+      </a>
+
+      <a class="nav-item" routerLink="/zones" routerLinkActive="active"  *ngIf="currentUserRole === 'CHEF'">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
+            <path d="M2 12h4M18 12h4M12 2v4M12 18v4"/>
+          </svg>
+        </span>
+        <span class="nav-label">Zones Réseau</span>
+      </a>
+
+      <a class="nav-item active" routerLink="/pylones" routerLinkActive="active"  *ngIf="currentUserRole === 'CHEF'">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <line x1="12" y1="2" x2="12" y2="22"/>
+            <path d="M8 6l4-4 4 4"/><path d="M6 10h12"/>
+            <path d="M8 14h8"/><path d="M10 18h4"/>
+          </svg>
+        </span>
+        <span class="nav-label">Pylônes</span>
+      </a>
+
+      <a class="nav-item" routerLink="/ticket" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M3 9V5a2 2 0 0 1 2-2h4"/><path d="M21 9V5a2 2 0 0 0-2-2h-4"/>
+            <path d="M3 15v4a2 2 0 0 0 2 2h4"/><path d="M21 15v4a2 2 0 0 1-2 2h-4"/>
+            <line x1="9" y1="12" x2="15" y2="12"/>
+          </svg>
+        </span>
+        <span class="nav-label">Tickets</span>
+        <span class="nav-badge nav-badge--new">New</span>
+      </a>
+
+      <a *ngIf="isAdmin" class="nav-item" routerLink="/userback" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </span>
+        <span class="nav-label">Utilisateurs</span>
+      </a>
+
+      <a class="nav-item" routerLink="/report" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+        </span>
+        <span class="nav-label">Report</span>
+      </a>
+
+      <a class="nav-item" routerLink="/statistiques" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+            <line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>
+          </svg>
+        </span>
+        <span class="nav-label">Statistiques</span>
+      </a>
+
+      <div class="nav-divider"></div>
+
+      <a class="nav-item" routerLink="/parametres" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </span>
+        <span class="nav-label">Paramètres</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-user">
+      <div class="user-avatar">{{ currentUserInitials }}</div>
+      <div class="user-info">
+        <span class="user-name">{{ currentUserName }}</span>
+        <span class="user-role-badge">{{ currentUserRole }}</span>
+      </div>
+      <button class="logout-btn" (click)="logout()" title="Déconnexion">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ══════════════ MAIN ══════════════ -->
+  <div class="py-shell">
+
+    <!-- ── Header ── -->
+    <header class="py-header">
+      <div class="py-header__left">
+        <div class="py-header__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20">
+            <line x1="12" y1="2" x2="12" y2="22"/>
+            <path d="M8 6l4-4 4 4"/><path d="M6 10h12"/>
+            <path d="M8 14h8"/><path d="M10 18h4"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="py-header__title">Pylônes</h1>
+          <p class="py-header__sub">{{ pylones.length }} pylône{{ pylones.length > 1 ? 's' : '' }} dans votre région</p>
+        </div>
+      </div>
+      <button class="py-btn py-btn--primary" (click)="openCreate()">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15">
+          <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+        </svg>
+        Nouveau Pylône
+      </button>
+    </header>
+
+    <!-- ── Stats bar ── -->
+    <div class="py-stats">
+      <div class="py-stat">
+        <span class="py-stat__num">{{ pylones.length }}</span>
+        <span class="py-stat__lbl">Total pylônes</span>
+      </div>
+      <div class="py-stat py-stat--green">
+        <span class="py-stat__num">{{ getPylonesSains() }}</span>
+        <span class="py-stat__lbl">Charge normale</span>
+      </div>
+      <div class="py-stat py-stat--amber">
+        <span class="py-stat__num">{{ getPylonesWarning() }}</span>
+        <span class="py-stat__lbl">Charge élevée</span>
+      </div>
+      <div class="py-stat py-stat--red">
+        <span class="py-stat__num">{{ getPylonesCritiques() }}</span>
+        <span class="py-stat__lbl">Surcharge critique</span>
+      </div>
+      <div class="py-stat py-stat--gray">
+        <span class="py-stat__num">{{ getPylonesBloques() }}</span>
+        <span class="py-stat__lbl">Bloqués</span>
+      </div>
+    </div>
+
+    <!-- ── Table ── -->
+    <div class="py-table-wrap">
+      <table class="py-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Pylône</th>
+            <th>Zone</th>
+            <th>Coordonnées</th>
+            <th>Capacité Max</th>
+            <th>Charge</th>
+            <th>Taux d'utilisation</th>
+            <th>Rayon</th>
+            <th>État</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of pagedPylones; let i = index"
+              class="py-row"
+              [style.animation-delay]="i * 35 + 'ms'"
+              [class.py-row--blocked]="p.estBloque">
+
+            <td><span class="py-id">#{{ p.id }}</span></td>
+
+            <td>
+              <div class="py-name">
+                <span class="py-dot"
+                      [class.py-dot--warn]="getTauxNum(p) > 60 && getTauxNum(p) <= 80"
+                      [class.py-dot--crit]="getTauxNum(p) > 80"
+                      [class.py-dot--blocked]="p.estBloque"></span>
+                <span class="py-name__label">{{ p.nom }}</span>
+              </div>
+            </td>
+
+            <td><span class="py-zone-tag">{{ p.zoneNom || '—' }}</span></td>
+
+            <td>
+              <div class="py-coords">
+                <span>{{ p.latitude }}°N</span>
+                <span class="py-coords__sep">·</span>
+                <span>{{ p.longitude }}°E</span>
+              </div>
+            </td>
+
+            <td>
+              <div class="py-bw">
+                <span class="py-bw__val">{{ p.capaciteMax }}</span>
+                <span class="py-bw__unit">Gb</span>
+              </div>
+            </td>
+
+            <td>
+              <div class="py-bw">
+                <span class="py-bw__val">{{ p.chargeActuelle }}</span>
+                <span class="py-bw__unit">Mbps</span>
+              </div>
+            </td>
+
+            <td>
+              <div class="py-taux-wrap">
+                <div class="py-taux-bar">
+                  <div class="py-taux-fill"
+                       [style.width]="getTaux(p) + '%'"
+                       [class.py-taux-fill--warn]="getTauxNum(p) > 60 && getTauxNum(p) <= 80"
+                       [class.py-taux-fill--crit]="getTauxNum(p) > 80">
+                  </div>
+                </div>
+                <span class="py-taux-pct"
+                      [class.py-taux-pct--warn]="getTauxNum(p) > 60 && getTauxNum(p) <= 80"
+                      [class.py-taux-pct--crit]="getTauxNum(p) > 80">
+                  {{ getTaux(p) }}%
+                </span>
+              </div>
+            </td>
+
+            <td>
+              <div class="py-bw">
+                <span class="py-bw__val">{{ p.rayonCouverture }}</span>
+                <span class="py-bw__unit">m</span>
+              </div>
+            </td>
+
+            <td>
+              <span class="py-status-badge"
+                    [class.py-status-badge--ok]="!p.estBloque"
+                    [class.py-status-badge--blocked]="p.estBloque">
+                {{ p.estBloque ? 'Bloqué' : 'Actif' }}
+              </span>
+            </td>
+
+            <td>
+              <div class="py-actions">
+                <button class="py-btn py-btn--icon py-btn--edit" (click)="openEdit(p)" title="Modifier">
+                  <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+                  </svg>
+                </button>
+                <button class="py-btn py-btn--icon py-btn--delete" (click)="delete(p.id!)" title="Supprimer">
+                  <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                  </svg>
+                </button>
+              </div>
+            </td>
+
+          </tr>
+
+          <tr *ngIf="pylones.length === 0">
+            <td colspan="10">
+              <div class="py-empty">
+                <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.2" width="48" height="48">
+                  <line x1="32" y1="4" x2="32" y2="60"/>
+                  <path d="M22 14l10-10 10 10"/><path d="M18 24h28"/>
+                  <path d="M22 34h20"/><path d="M26 44h12"/>
+                </svg>
+                <p>Aucun pylône dans votre région</p>
+                <button class="py-btn py-btn--primary py-btn--sm" (click)="openCreate()">Créer le premier pylône</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+     
+    </div>
+ <!-- ── Pagination ── -->
+<div class="py-pagination" *ngIf="totalPages > 1">
+  <button class="py-page-btn" 
+          (click)="goToPage(currentPage - 1)" 
+          [disabled]="currentPage === 1">
+    <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+      <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"/>
+    </svg>
+  </button>
+
+  <button class="py-page-btn" 
+          *ngFor="let page of pages"
+          [class.py-page-btn--active]="page === currentPage"
+          (click)="goToPage(page)">
+    {{ page }}
+  </button>
+
+  <button class="py-page-btn" 
+          (click)="goToPage(currentPage + 1)" 
+          [disabled]="currentPage === totalPages">
+    <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+      <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/>
+    </svg>
+  </button>
+
+  <span class="py-page-info">
+    Page {{ currentPage }} / {{ totalPages }} 
+    <span class="py-page-total">({{ pylones.length }} pylônes)</span>
+  </span>
+</div>
+  </div>
+</div>
+
+<!-- ══════════════ MODAL FORMULAIRE ══════════════ -->
+<div class="py-modal-overlay" *ngIf="showForm" (click)="cancel()">
+  <div class="py-modal" (click)="$event.stopPropagation()">
+
+    <div class="py-modal__header">
+      <div class="py-modal__title-group">
+        <div class="py-modal__icon">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+          </svg>
+        </div>
+        <h3 class="py-modal__title">{{ isEditing ? 'Modifier le pylône' : 'Nouveau pylône' }}</h3>
+      </div>
+      <button class="py-btn py-btn--ghost py-btn--icon" (click)="cancel()">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="py-modal__body">
+      <div class="py-form-grid">
+
+        <div class="py-field">
+          <label class="py-field__label">Nom du pylône</label>
+          <input class="py-field__input" [(ngModel)]="formPylone.nom" placeholder="Ex : Pylône Nord-A1" />
+        </div>
+
+        <div class="py-field">
+          <label class="py-field__label">Zone réseau</label>
+          <select class="py-field__select" [(ngModel)]="selectedZoneId">
+            <option [ngValue]="null">-- Sélectionner une zone --</option>
+            <option *ngFor="let z of zones" [ngValue]="z.zone_id">{{ z.nom }}</option>
+          </select>
+        </div>
+
+        <div class="py-field">
+          <label class="py-field__label">Latitude</label>
+          <input class="py-field__input" type="number" [(ngModel)]="formPylone.latitude" placeholder="36.8065" />
+        </div>
+
+        <div class="py-field">
+          <label class="py-field__label">Longitude</label>
+          <input class="py-field__input" type="number" [(ngModel)]="formPylone.longitude" placeholder="10.1815" />
+        </div>
+
+        <div class="py-field">
+          <label class="py-field__label">Capacité Max (Gb)</label>
+          <input class="py-field__input" type="number" [(ngModel)]="formPylone.capaciteMax" placeholder="10" />
+        </div>
+
+        <div class="py-field">
+          <label class="py-field__label">Charge Actuelle (Mbps)</label>
+          <input class="py-field__input" type="number" [(ngModel)]="formPylone.chargeActuelle" placeholder="0" />
+        </div>
+
+      </div>
+    </div>
+
+    <div class="py-modal__footer">
+      <button class="py-btn py-btn--ghost" (click)="cancel()">Annuler</button>
+      <button class="py-btn py-btn--primary" (click)="save()">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+          <path d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6h5a2 2 0 012 2v7a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2h5v5.586l-1.293-1.293z"/>
+        </svg>
+        {{ isEditing ? 'Mettre à jour' : 'Créer le pylône' }}
+      </button>
+    </div>
+
+  </div>
+</div>

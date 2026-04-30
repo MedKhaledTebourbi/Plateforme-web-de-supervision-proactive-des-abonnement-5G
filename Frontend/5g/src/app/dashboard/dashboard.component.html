@@ -1,0 +1,140 @@
+<div class="page">
+
+  <!-- En-tête -->
+  <header class="page-header">
+    <div class="header-brand">
+      <span class="header-prompt">&#x25B6;</span>
+      <div>
+        <h1>Tableau de bord</h1>
+        <p class="subtitle">Supervision IA — détection et prédiction de saturation</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <span class="refresh-info">--refresh=30s</span>
+      <span class="dot" [class.dot--live]="!loading"></span>
+    </div>
+  </header>
+<!-- Bandeau région -->
+<div class="region-banner" *ngIf="!isAdmin && userRegion">
+  <span class="section-tag">RÉGION</span>
+  Zones de la région <strong>{{ userRegion | titlecase }}</strong>
+  <span class="zone-count">— {{ reports.length }} zones</span>
+</div>
+  <!-- Cartes de statistiques globales -->
+  <div class="stats-grid" *ngIf="stats">
+    <app-stat-card
+      label="Zones totales"
+      [value]="stats.totalZones"
+      color="#378ADD"/>
+    <app-stat-card
+      label="Normales"
+      [value]="stats.zonesNormales"
+      color="#39d353"/>
+    <app-stat-card
+      label="Attention"
+      [value]="stats.zonesEnAttention"
+      color="#d29922"/>
+    <app-stat-card
+      label="Saturées"
+      [value]="stats.zonesSaturees"
+      color="#f85149"
+      [sub]="stats.zonesCritiques + ' critiques'"/>
+  </div>
+
+  <!-- Alertes critiques -->
+  <section class="alerts" *ngIf="critiques.length > 0">
+    <h2><span class="section-tag">ALERT</span> Alertes actives</h2>
+    <div class="alert-card" *ngFor="let r of critiques">
+      <div class="alert-left">
+        <app-status-badge [status]="r.statut"/>
+        <strong>{{ r.zoneNom }}</strong>
+      </div>
+      <div class="alert-center">
+        <app-gauge [value]="r.tauxUtilisation" label="Taux"/>
+        <span class="alert-pylones">
+          {{ r.nbPylonesSatures }}/{{ r.nbPylonesTotal }} pylônes saturés
+        </span>
+      </div>
+      <div class="alert-right" *ngIf="r.saturationPredite">
+        <span class="pred-label">Saturation prévue</span>
+        <span class="pred-time">{{ r.heuresAvantSaturation | number:'1.0-1' }}h</span>
+        <span class="pred-date">{{ r.datePredicteSaturation | date:'dd/MM HH:mm' }}</span>
+      </div>
+      <button class="btn-detail" (click)="goToZone(r.zoneId)">
+        Détails ↗
+      </button>
+    </div>
+  </section>
+
+  <!-- Tableau complet des zones -->
+  <section class="zones-table">
+    <h2>
+      <span class="section-tag warn">TABLE</span>
+      Toutes les zones
+      <span class="filter-prefix">$&gt;&nbsp;</span>
+      <input
+        type="text"
+        placeholder="grep zone..."
+        [(ngModel)]="filter"
+        (ngModelChange)="applyFilter()"
+        class="filter-input"/>
+    </h2>
+
+    <div class="loading-bar" *ngIf="loading">Chargement...</div>
+
+    <table *ngIf="!loading">
+      <thead>
+        <tr>
+          <th (click)="sort('zoneNom')">Zone</th>
+          <th (click)="sort('tauxUtilisation')">Taux %</th>
+          <th (click)="sort('statut')">Statut</th>
+          <th (click)="sort('ratioSatures')">Pylônes sat.</th>
+          <th (click)="sort('tendance6h')">Tendance 6h</th>
+          <th>Prédiction</th>
+          <th>Confiance</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of filtered"
+            [class.row--sature]="r.statut === 'SATURE'"
+            [class.row--critique]="r.statut === 'CRITIQUE'">
+          <td><strong>{{ r.zoneNom }}</strong></td>
+          <td>
+            <div class="taux-bar">
+              <div class="taux-fill"
+                   [style.width.%]="r.tauxUtilisation"
+                   [style.background]="statusColor(r.statut)">
+              </div>
+              <span>{{ r.tauxUtilisation | number:'1.0-1' }}%</span>
+            </div>
+          </td>
+          <td><app-status-badge [status]="r.statut"/></td>
+          <td>{{ r.nbPylonesSatures }}/{{ r.nbPylonesTotal }}
+              <small>({{ r.ratioSatures | number:'1.0-0' }}%)</small>
+          </td>
+          <td [class.tendance-up]="r.tendance6h > 5"
+              [class.tendance-down]="r.tendance6h < -5">
+            {{ r.tendance6h > 0 ? '+' : '' }}{{ r.tendance6h | number:'1.0-1' }}%
+          </td>
+          <td>
+            <span *ngIf="r.saturationPredite; else noPred">
+              dans {{ r.heuresAvantSaturation | number:'1.0-1' }}h
+            </span>
+            <ng-template #noPred>
+              <span class="no-pred">—</span>
+            </ng-template>
+          </td>
+          <td>
+            <span *ngIf="r.saturationPredite">
+              {{ r.confidencePrediction | percent:'1.0-0' }}
+            </span>
+          </td>
+          <td>
+            <button class="btn-sm" (click)="goToZone(r.zoneId)">Voir</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+</div>

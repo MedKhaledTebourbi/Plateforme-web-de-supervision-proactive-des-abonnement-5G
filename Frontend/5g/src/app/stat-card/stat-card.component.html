@@ -1,0 +1,5 @@
+<div class="stat-card" [style.border-left-color]="color">
+      <span class="stat-label">{{ label }}</span>
+      <span class="stat-value" [style.color]="color">{{ value }}</span>
+      <span class="stat-sub" *ngIf="sub">{{ sub }}</span>
+    </div>

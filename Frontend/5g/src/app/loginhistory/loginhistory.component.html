@@ -1,0 +1,202 @@
+<!-- =============================
+     USERS SUPERVISION TABLE
+     ============================= -->
+<div class="section-wrap">
+
+  <!-- HEADER -->
+  <div class="section-header">
+    <div>
+      <div class="section-title">Supervision des Utilisateurs</div>
+      <div class="section-meta">{{ users.length }} comptes enregistrés · cliquez sur un utilisateur pour voir l'historique</div>
+    </div>
+    <div class="section-controls">
+      <div class="search-box">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input type="text" placeholder="Rechercher un utilisateur..."/>
+      </div>
+      <button class="filter-btn">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" d="M3 4h18M7 9h10M11 14h2"/>
+        </svg>
+        Filtrer
+      </button>
+      <button routerLink="/userback" class="btn btn-outline-dark btn-sm">
+  ⬅ Retour
+</button>
+    </div>
+  </div>
+
+  <!-- MAIN TABLE -->
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Utilisateur</th>
+        <th>Rôle</th>
+        <th>Statut</th>
+        <th>Créé le</th>
+        <th>Créé par</th>
+        <th>Désactivé par</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let u of users"
+          [class.selected-row]="selectedUser === u.username"
+          (click)="showHistory(u.username)">
+
+        <!-- USERNAME -->
+        <td>
+          <div class="user-cell">
+            <div class="user-avatar" [class.avatar-inactive]="!u.active">
+              {{ u.username?.charAt(0)?.toUpperCase() }}
+            </div>
+            <div class="user-info">
+              <span class="user-name">{{ u.username }}</span>
+              <span class="user-hint">Voir historique →</span>
+            </div>
+          </div>
+        </td>
+
+        <!-- ROLE -->
+        <td>
+          <span class="role-badge"
+            [ngClass]="{
+              'role-admin':      u.role === 'ADMIN' || u.role === 'admin',
+              'role-moderator':  u.role === 'SUPERVISEUR' || u.role === 'moderator',
+              'role-user':       u.role === 'USER' || u.role === 'user'
+            }">
+            {{ u.role }}
+          </span>
+        </td>
+
+        <!-- STATUS -->
+        <td>
+          <div class="status-cell">
+            <span class="status-dot" [class.dot-active]="u.active" [class.dot-inactive]="!u.active"></span>
+            <span [class.status-active]="u.active" [class.status-inactive]="!u.active">
+              {{ u.active ? 'Actif' : 'Inactif' }}
+            </span>
+          </div>
+        </td>
+
+        <!-- CREATED AT -->
+        <td class="mono-cell">{{ u.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+
+        <!-- CREATED BY -->
+        <td class="mono-cell">{{ u.createdBy }}</td>
+
+        <!-- DISABLED BY -->
+        <td class="mono-cell">
+          <span [class.dash-cell]="!u.disabledBy">{{ u.disabledBy || '—' }}</span>
+        </td>
+
+        <!-- ACTIONS -->
+        <td (click)="$event.stopPropagation()">
+          <div class="actions-cell">
+            <button class="action-btn toggle-btn"
+              [class.btn-activate]="!u.active"
+              [class.btn-deactivate]="u.active"
+              (click)="toggle(u)"
+              [title]="u.active ? 'Désactiver' : 'Activer'">
+              <svg *ngIf="u.active" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636"/>
+              </svg>
+              <svg *ngIf="!u.active" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              {{ u.active ? 'Désactiver' : 'Activer' }}
+            </button>
+          </div>
+        </td>
+
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- EMPTY STATE -->
+  <div class="empty-state" *ngIf="users.length === 0">
+    <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197"/>
+    </svg>
+    <p>Aucun utilisateur trouvé</p>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="table-footer">
+    <div class="page-info">{{ users.length }} utilisateur(s) affiché(s)</div>
+    <div class="pagination">
+      <button class="page-btn">←</button>
+      <button class="page-btn active">1</button>
+      <button class="page-btn">2</button>
+      <button class="page-btn">3</button>
+      <button class="page-btn">→</button>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- =============================
+     HISTORIQUE PANEL
+     ============================= -->
+<div class="history-panel" *ngIf="history.length > 0">
+
+  <div class="history-header">
+    <div class="history-title-block">
+      <div class="history-icon">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="history-title">Historique de connexion</div>
+        <div class="history-meta">
+          <span class="history-user">{{ selectedUser }}</span>
+          · {{ history.length }} sessions enregistrées
+        </div>
+      </div>
+    </div>
+    <button class="close-btn" (click)="history = []">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
+  </div>
+
+  <table class="history-table">
+    <thead>
+      <tr>
+        <th>
+          <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:inline;margin-right:5px">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Date / Heure
+        </th>
+        <th>
+          <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:inline;margin-right:5px">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"/>
+          </svg>
+          Adresse IP
+        </th>
+        <th>
+          <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:inline;margin-right:5px">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+          </svg>
+          Navigateur / Agent
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let h of history; let i = index" [style.animation-delay]="i * 0.05 + 's'">
+        <td class="mono-cell">{{ h.loginTime | date:'dd/MM/yyyy · HH:mm:ss' }}</td>
+        <td>
+          <span class="ip-badge">{{ h.ipAddress }}</span>
+        </td>
+        <td class="agent-cell">{{ h.userAgent }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>

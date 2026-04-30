@@ -1,0 +1,70 @@
+<!-- reset.component.html -->
+<div class="rp-wrap">
+  <div class="rp-card">
+
+    <div class="rp-icon-wrap">
+      <!-- icône cadenas -->
+    </div>
+
+    <h1 class="rp-title">Nouveau mot de passe</h1>
+    <p class="rp-sub">Choisissez un mot de passe sécurisé pour votre compte.</p>
+
+    <!-- Messages erreur / succès -->
+    <div class="rp-error" *ngIf="resetError">{{ resetError }}</div>
+    <div class="rp-success" *ngIf="resetMessage">{{ resetMessage }}</div>
+
+    <!-- Règles de validation -->
+    <div class="rp-rules">
+      <div class="rp-rule" [class.valid]="newPassword.length >= 8">
+        <span class="rp-rule-dot"></span>8 caractères min.
+      </div>
+      <div class="rp-rule" [class.valid]="hasUpper()">
+        <span class="rp-rule-dot"></span>Une majuscule
+      </div>
+      <div class="rp-rule" [class.valid]="hasNumber()">
+        <span class="rp-rule-dot"></span>Un chiffre
+      </div>
+      <div class="rp-rule" [class.valid]="hasSpecial()">
+        <span class="rp-rule-dot"></span>Un caractère spécial
+      </div>
+    </div>
+
+    <!-- Nouveau mot de passe -->
+    <label class="rp-label">Nouveau mot de passe</label>
+    <div class="rp-field">
+      <input [type]="showNew ? 'text' : 'password'"
+             [(ngModel)]="newPassword"
+             placeholder="••••••••" />
+      <button class="rp-eye" type="button" (click)="showNew = !showNew">
+        <!-- icône œil -->
+      </button>
+    </div>
+
+    <!-- Confirmer mot de passe -->
+    <label class="rp-label">Confirmer le mot de passe</label>
+    <div class="rp-field">
+      <input [type]="showConfirm ? 'text' : 'password'"
+             [(ngModel)]="confirmPassword"
+             placeholder="••••••••" />
+      <button class="rp-eye" type="button" (click)="showConfirm = !showConfirm">
+        <!-- icône œil -->
+      </button>
+    </div>
+
+    <div class="rp-match"
+         [style.color]="newPassword === confirmPassword && confirmPassword
+                        ? 'var(--color-text-success)'
+                        : 'var(--color-text-danger)'">
+      <span *ngIf="confirmPassword">
+        {{ newPassword === confirmPassword ? 'Les mots de passe correspondent' : 'Les mots de passe ne correspondent pas' }}
+      </span>
+    </div>
+
+    <button class="rp-submit"
+            (click)="onResetPassword()"
+            [disabled]="newPassword !== confirmPassword || !newPassword">
+      Réinitialiser le mot de passe
+    </button>
+
+  </div>
+</div>

@@ -1,0 +1,26 @@
+spring:
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: reclamation-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.example.micro_reclamation.Entity"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+    admin:
+      auto-create: true
+
+# ── Logs structurés ────────────────────────────────────────────
+logging:
+  level:
+    com.example.micro_reclamation: INFO
+    org.springframework.kafka:     WARN   # masquer les logs verbeux Kafka
+    org.apache.kafka:              ERROR  # masquer les logs internes Kafka
+  pattern:
+    console: "%d{HH:mm:ss} [%thread] %-5level %logger{36} — %msg%n"

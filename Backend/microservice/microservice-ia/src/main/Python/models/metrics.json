@@ -1,0 +1,13 @@
+{
+  "accuracy": 1.0,
+  "f1_weighted": 1.0,
+  "cv_f1_mean": 0.9994,
+  "cv_f1_std": 0.0012,
+  "classes": [
+    "BASSE",
+    "CRITIQUE",
+    "HAUTE",
+    "MOYENNE"
+  ],
+  "n_samples": 5000
+}

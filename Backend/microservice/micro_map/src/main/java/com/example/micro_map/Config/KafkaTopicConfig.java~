@@ -1,0 +1,4 @@
+package com.example.micro_map.Config;
+
+public class KafkaTopicConfig {
+}

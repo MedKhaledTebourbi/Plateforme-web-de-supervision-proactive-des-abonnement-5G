@@ -1,0 +1,37 @@
+package com.example.microserviceia.Client;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
+import lombok.extern.slf4j.Slf4j;
+
+@Component
+@Slf4j
+public class ReclamationClient {
+
+    private final RestTemplate restTemplate;
+
+    @Value("${microservice.reclamation.url:http://localhost:8083}")
+    private String reclamationUrl;
+
+    public ReclamationClient(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
+
+    /**
+     * Sauvegarde la priorité dans le microservice réclamation.
+     * Appel silencieux — ne bloque pas si le service est indisponible.
+     */
+    public void savePriorite(Long ticketId, String priorite) {
+        try {
+            String url = reclamationUrl + "/api/tickets/" + ticketId
+                    + "/priorite?priorite=" + priorite;
+            restTemplate.patchForObject(url, null, Void.class);
+            log.info("[Client] Priorité {} sauvegardée pour ticket {}", priorite, ticketId);
+        } catch (Exception e) {
+            log.warn("[Client] Impossible de sauvegarder priorité ticket {}: {}",
+                    ticketId, e.getMessage());
+            // Ne pas propager l'erreur — la prédiction reste valide
+        }
+    }
+}

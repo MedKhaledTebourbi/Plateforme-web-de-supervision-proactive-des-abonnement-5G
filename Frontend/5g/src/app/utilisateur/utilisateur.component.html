@@ -1,0 +1,101 @@
+<div class="login-page">
+  <!-- Background avec image floue -->
+  <div class="telecom-background">
+    <div class="background-image"></div>
+    <div class="network-pattern"></div>
+    <div class="dots-pattern"></div>
+  </div>
+
+  <!-- Logo Tunisie Télécom en haut à gauche -->
+  <div class="header-logo">
+    <div class="logo-circle">
+      <img src="/assets/images/z.png" alt="Tunisie Télécom Logo" class="logo-img">
+    </div>
+    <span class="brand-name">Tunisie Télécom</span>
+  </div>
+
+  <!-- Formulaire de connexion centré -->
+  <div class="login-box">
+    <div class="login-header">
+      <h1>Connexion</h1>
+      <p>Accédez à votre espace professionnel</p>
+    </div>
+
+    <form (ngSubmit)="onLogin()">
+      <div class="input-group">
+        <label for="username">Nom d'utilisateur</label>
+        <div class="input-wrapper">
+          <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          <input 
+            type="text" 
+            id="username" 
+            [(ngModel)]="username" 
+            name="username" 
+            placeholder="Entrez votre nom d'utilisateur"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label for="password">Mot de passe</label>
+        <div class="input-wrapper">
+          <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <input 
+            type="password" 
+            id="password" 
+            [(ngModel)]="password" 
+            name="password" 
+            placeholder="Entrez votre mot de passe"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="forgot-link">
+  <a 
+    [routerLink]="username ? ['/reset-password'] : null"
+    [queryParams]="username ? { username: username } : null"
+    [class.disabled]="!username"
+    (click)="!username && $event.preventDefault()"
+  >
+    Mot de passe oublié ?
+  </a>
+</div>
+
+
+
+
+      <div class="error-box" *ngIf="errorMessage">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        {{ errorMessage }}
+      </div>
+      <p class="error" *ngIf="errorMessage">
+  {{ errorMessage }}
+</p>
+
+
+      <button type="submit" class="login-btn">
+        Se connecter
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </button>
+    </form>
+
+    <div class="footer-text">
+      <p>&copy; 2026 Tunisie Télécom - Tous droits réservés</p>
+    </div>
+  </div>
+</div>

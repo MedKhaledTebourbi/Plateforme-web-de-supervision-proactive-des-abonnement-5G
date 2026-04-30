@@ -1,0 +1,18 @@
+ <div class="gauge-wrap">
+      <svg viewBox="0 0 120 70" width="120" height="70">
+        <!-- Track -->
+        <path d="M10,65 A55,55 0 0,1 110,65"
+              fill="none" stroke="#e8e8e6" stroke-width="10"
+              stroke-linecap="round"/>
+        <!-- Fill arc -->
+        <path [attr.d]="arcPath"
+              fill="none" [attr.stroke]="color" stroke-width="10"
+              stroke-linecap="round"
+              style="transition: stroke-dashoffset 0.8s ease"/>
+        <!-- Value -->
+        <text x="60" y="60" text-anchor="middle"
+              font-size="16" font-weight="500"
+              [attr.fill]="color">{{ value | number:'1.0-0' }}%</text>
+      </svg>
+      <p class="gauge-label">{{ label }}</p>
+    </div>

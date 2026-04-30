@@ -1,0 +1,238 @@
+<div class="page">
+
+  <!-- ── Topbar ──────────────────────────────────────────────── -->
+  <header class="page-header">
+    <div class="header-brand">
+      <span class="header-prompt">&#x25B6;</span>
+      <div>
+        <h1>Générateur de Rapports</h1>
+        <p class="subtitle">Exports PDF &amp; Excel — Tickets · Chantiers · QoS</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <span class="refresh-info">--format=[pdf|xlsx]</span>
+      <span class="dot dot--live"></span>
+    </div>
+  </header>
+
+  <!-- ── Sélecteur période ────────────────────────────────────── -->
+  <section class="selector-section">
+    <div class="section-head">
+      <span class="section-tag">CONFIG</span>
+      <span class="section-title">Sélection de la période</span>
+    </div>
+
+    <div class="selector-row">
+      <div class="select-group">
+        <label class="select-label">$ --mois</label>
+        <select [(ngModel)]="mois" (ngModelChange)="loadPreview()" class="styled-select">
+          <option *ngFor="let m of moisOptions" [value]="m.val">{{ m.label }}</option>
+        </select>
+      </div>
+
+      <div class="select-group">
+        <label class="select-label">$ --annee</label>
+        <select [(ngModel)]="annee" (ngModelChange)="loadPreview()" class="styled-select">
+          <option *ngFor="let a of anneeOptions" [value]="a">{{ a }}</option>
+        </select>
+      </div>
+
+      <button class="btn-refresh" (click)="loadPreview()" [disabled]="loadingKpi">
+        <span *ngIf="!loadingKpi">↻ Actualiser</span>
+        <span *ngIf="loadingKpi" class="blink">Chargement...</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ── Messages feedback ────────────────────────────────────── -->
+  <div class="msg msg--success" *ngIf="successMsg">&#x2714; {{ successMsg }}</div>
+  <div class="msg msg--error"   *ngIf="errorMsg">&#x2717; {{ errorMsg }}</div>
+
+  <!-- ── KPI Preview ──────────────────────────────────────────── -->
+  <section class="kpi-section">
+    <div class="section-head">
+      <span class="section-tag warn">PREVIEW</span>
+      <span class="section-title">Aperçu — {{ moisLabel }} {{ annee }}</span>
+      <span class="section-count" *ngIf="report">{{ report.totalTickets }} tickets · {{ report.totalChantiers }} chantiers</span>
+    </div>
+
+    <div class="loading-bar blink" *ngIf="loadingKpi">$ fetch /reports/monthly...</div>
+
+    <div *ngIf="report && !loadingKpi">
+
+      <!-- Cartes KPI -->
+      <div class="kpi-grid">
+        <div class="kpi-card" style="--accent:#378ADD">
+          <span class="kpi-label">Total Tickets</span>
+          <span class="kpi-value" style="color:#378ADD">{{ report.totalTickets }}</span>
+        </div>
+        <div class="kpi-card" style="--accent:#39d353">
+          <span class="kpi-label">Tickets Clos</span>
+          <span class="kpi-value" style="color:#39d353">{{ report.ticketsClos }}</span>
+          <span class="kpi-sub">{{ tauxResolution }}% résolution</span>
+        </div>
+        <div class="kpi-card" style="--accent:#d29922">
+          <span class="kpi-label">En cours</span>
+          <span class="kpi-value" style="color:#d29922">{{ report.ticketsOuverts }}</span>
+        </div>
+        <div class="kpi-card" style="--accent:#39d353">
+          <span class="kpi-label">Chantiers Term.</span>
+          <span class="kpi-value" style="color:#39d353">{{ report.chantiersTermines }}</span>
+          <span class="kpi-sub">{{ tauxChantiers }}% achèvement</span>
+        </div>
+        <div class="kpi-card" style="--accent:#8b949e">
+          <span class="kpi-label">Temps moyen</span>
+          <span class="kpi-value" style="color:#8b949e;font-size:16px">{{ fmtHours(report.tempsMoyenResolution) }}</span>
+        </div>
+        <div class="kpi-card" style="--accent:#8b949e">
+          <span class="kpi-label">Temps médian</span>
+          <span class="kpi-value" style="color:#8b949e;font-size:16px">{{ fmtHours(report.tempsMedianResolution) }}</span>
+        </div>
+      </div>
+
+      <!-- Barres de progression -->
+      <div class="bars-section">
+        <div class="bar-row">
+          <span class="bar-label">Taux de résolution tickets</span>
+          <div class="bar-track">
+            <div class="bar-fill" [style.width.%]="tauxResolution"
+                 [class.fill-ok]="tauxResolution>=80"
+                 [class.fill-warn]="tauxResolution>=50 && tauxResolution<80"
+                 [class.fill-danger]="tauxResolution<50"></div>
+          </div>
+          <span class="bar-pct" [class]="statusClass(tauxResolution)">{{ tauxResolution }}%</span>
+          <span class="bar-status" [class]="statusClass(tauxResolution)">{{ statusLabel(tauxResolution) }}</span>
+        </div>
+
+        <div class="bar-row">
+          <span class="bar-label">Taux d'achèvement chantiers</span>
+          <div class="bar-track">
+            <div class="bar-fill" [style.width.%]="tauxChantiers"
+                 [class.fill-ok]="tauxChantiers>=80"
+                 [class.fill-warn]="tauxChantiers>=50 && tauxChantiers<80"
+                 [class.fill-danger]="tauxChantiers<50"></div>
+          </div>
+          <span class="bar-pct" [class]="statusClass(tauxChantiers)">{{ tauxChantiers }}%</span>
+          <span class="bar-status" [class]="statusClass(tauxChantiers)">{{ statusLabel(tauxChantiers) }}</span>
+        </div>
+      </div>
+
+      <!-- Tableau détail -->
+      <table class="detail-table">
+        <thead>
+          <tr>
+            <th>Indicateur</th>
+            <th>Valeur</th>
+            <th>Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Total tickets</td>
+            <td class="val">{{ report.totalTickets }}</td>
+            <td>—</td>
+          </tr>
+          <tr class="row-shaded">
+            <td>Tickets clôturés</td>
+            <td class="val green">{{ report.ticketsClos }}</td>
+            <td><span class="badge" [class]="statusClass(tauxResolution)">{{ statusLabel(tauxResolution) }}</span></td>
+          </tr>
+          <tr>
+            <td>Tickets en cours</td>
+            <td class="val amber">{{ report.ticketsOuverts }}</td>
+            <td>—</td>
+          </tr>
+          <tr class="row-shaded">
+            <td>Total chantiers</td>
+            <td class="val">{{ report.totalChantiers }}</td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td>Chantiers terminés</td>
+            <td class="val green">{{ report.chantiersTermines }}</td>
+            <td><span class="badge" [class]="statusClass(tauxChantiers)">{{ statusLabel(tauxChantiers) }}</span></td>
+          </tr>
+          <tr class="row-shaded">
+            <td>Temps moyen résolution</td>
+            <td class="val">{{ fmtHours(report.tempsMoyenResolution) }}</td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td>Temps médian résolution</td>
+            <td class="val">{{ fmtHours(report.tempsMedianResolution) }}</td>
+            <td>—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── QoS Block ─────────────────────────────────────────────── -->
+  <section class="qos-section" *ngIf="qos">
+    <div class="section-head">
+      <span class="section-tag blue">QoS</span>
+      <span class="section-title">Qualité de Service — réseau global</span>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi-card" style="--accent:#378ADD">
+        <span class="kpi-label">Taux SLA</span>
+        <span class="kpi-value" style="color:#378ADD">{{ qos.tauxSLA | number:'1.0-1' }}%</span>
+      </div>
+      <div class="kpi-card" style="--accent:#39d353">
+        <span class="kpi-label">Disponibilité réseau</span>
+        <span class="kpi-value" style="color:#39d353">{{ qos.disponibiliteReseau }}%</span>
+      </div>
+      <div class="kpi-card" style="--accent:#d29922">
+        <span class="kpi-label">Pannes critiques</span>
+        <span class="kpi-value" style="color:#d29922">{{ qos.pannesCritiques }}</span>
+      </div>
+      <div class="kpi-card" style="--accent:#39d353">
+        <span class="kpi-label">Incidents résolus</span>
+        <span class="kpi-value" style="color:#39d353">{{ qos.incidentsResolus }} / {{ qos.totalIncidents }}</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Export buttons ───────────────────────────────────────── -->
+  <section class="export-section">
+    <div class="section-head">
+      <span class="section-tag">EXPORT</span>
+      <span class="section-title">Générer &amp; Télécharger</span>
+    </div>
+
+    <div class="export-row">
+
+      <div class="export-card">
+        <div class="export-icon pdf-icon">PDF</div>
+        <div class="export-info">
+          <span class="export-name">Rapport PDF</span>
+          <span class="export-desc">Format officiel · mise en page · signatures</span>
+          <span class="export-file">rapport-{{ mois }}-{{ annee }}.pdf</span>
+        </div>
+        <button class="btn-export btn-pdf"
+                (click)="downloadPdf()"
+                [disabled]="loadingPdf || !report">
+          <span *ngIf="!loadingPdf">&#x2193; Télécharger PDF</span>
+          <span *ngIf="loadingPdf" class="blink">Génération...</span>
+        </button>
+      </div>
+
+      <div class="export-card">
+        <div class="export-icon xls-icon">XLS</div>
+        <div class="export-info">
+          <span class="export-name">Rapport Excel</span>
+          <span class="export-desc">Données brutes · tableaux · filtres</span>
+          <span class="export-file">rapport-{{ mois }}-{{ annee }}.xlsx</span>
+        </div>
+        <button class="btn-export btn-xls"
+                (click)="downloadExcel()"
+                [disabled]="loadingExcel || !report">
+          <span *ngIf="!loadingExcel">&#x2193; Télécharger Excel</span>
+          <span *ngIf="loadingExcel" class="blink">Génération...</span>
+        </button>
+      </div>
+
+    </div>
+  </section>
+
+</div>

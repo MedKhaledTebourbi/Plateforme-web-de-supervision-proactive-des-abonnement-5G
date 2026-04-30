@@ -1,0 +1,367 @@
+<div class="app-layout">
+
+  <!-- ══════════════ SIDEBAR ══════════════ -->
+  <aside class="sidebar" [class.collapsed]="sidebarCollapsed">
+    <div class="sidebar-header">
+      <div class="logo-block">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <span class="logo-text">TuniNet</span>
+      </div>
+      <button class="collapse-btn" (click)="sidebarCollapsed = !sidebarCollapsed" title="Réduire">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </button>
+    </div>
+
+    <nav class="nav-links">
+      <a class="nav-item" routerLink="/dashboard" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+        </span>
+        <span class="nav-label">Tableau de bord</span>
+      </a>
+
+      <a class="nav-item" routerLink="/map" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+            <line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/>
+          </svg>
+        </span>
+        <span class="nav-label">Carte Réseau</span>
+        <span class="nav-badge nav-badge--live">Live</span>
+      </a>
+
+      <a class="nav-item active" routerLink="/chantiers/nouveau" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/>
+          </svg>
+        </span>
+        <span class="nav-label">Chantiers</span>
+      </a>
+
+      <a class="nav-item" routerLink="/ticket" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M3 9V5a2 2 0 0 1 2-2h4"/><path d="M21 9V5a2 2 0 0 0-2-2h-4"/>
+            <path d="M3 15v4a2 2 0 0 0 2 2h4"/><path d="M21 15v4a2 2 0 0 1-2 2h-4"/>
+            <line x1="9" y1="12" x2="15" y2="12"/>
+          </svg>
+        </span>
+        <span class="nav-label">Tickets</span>
+        <span class="nav-badge nav-badge--new">New</span>
+      </a>
+
+        <a class="nav-item"
+  routerLink="/zone"
+  routerLinkActive="active"
+  *ngIf="currentUserRole === 'CHEF'">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/>
+            <line x1="12" y1="2" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="22"/>
+            <line x1="2" y1="12" x2="8" y2="12"/><line x1="16" y1="12" x2="22" y2="12"/>
+          </svg>
+        </span>
+        <span class="nav-label">Zones Réseau</span>
+      </a>
+        <a class="nav-item"
+  routerLink="/pylone"
+  routerLinkActive="active"
+  *ngIf="currentUserRole === 'CHEF'">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M12 2l3 6H9l3-6z"/><line x1="12" y1="8" x2="12" y2="22"/>
+            <path d="M7 12H5l7-4 7 4h-2"/><path d="M9 17H7l5-3 5 3h-2"/>
+          </svg>
+        </span>
+        <span class="nav-label">Pylônes</span>
+      </a>
+ 
+
+      <a class="nav-item" routerLink="/report" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+        </span>
+        <span class="nav-label">Report</span>
+      </a>
+
+      <a class="nav-item" routerLink="/statistiques" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+            <line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>
+          </svg>
+        </span>
+        <span class="nav-label">Statistiques</span>
+      </a>
+
+      <div class="nav-divider"></div>
+
+      <a class="nav-item" routerLink="/parametres" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </span>
+        <span class="nav-label">Paramètres</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-user">
+      <div class="user-avatar">{{ currentUserInitials }}</div>
+      <div class="user-info">
+        <span class="user-name">{{ currentUserName }}</span>
+        <span class="user-role-badge">{{ currentUserRole }}</span>
+      </div>
+      <button class="logout-btn" (click)="logout()" title="Déconnexion">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ══════════════ MAIN ══════════════ -->
+  <div class="cf-shell">
+
+    <!-- ░░ Header ░░ -->
+    <header class="cf-header">
+      <div class="cf-header__left">
+        <div class="cf-header__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20">
+            <path d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="cf-header__title">Nouveau chantier</h1>
+          <p class="cf-header__sub">Planification et affectation des travaux</p>
+        </div>
+      </div>
+      <div class="cf-header__right" *ngIf="currentUserRegion">
+        <div class="cf-region-badge">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="11" height="11">
+            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+          </svg>
+          {{ currentUserRegion }}
+        </div>
+      </div>
+    </header>
+
+    <!-- ░░ Loading ░░ -->
+    <div *ngIf="loading" class="cf-loading">
+      <div class="cf-loading__dots">
+        <span></span><span></span><span></span>
+      </div>
+      <p>Chargement des données...</p>
+    </div>
+
+    <!-- ░░ Steps indicator ░░ -->
+    <div class="cf-steps" *ngIf="!loading">
+      <div class="cf-step cf-step--done">
+        <div class="cf-step__circle">01</div>
+        <span class="cf-step__label">Identification</span>
+      </div>
+      <div class="cf-step__line"></div>
+      <div class="cf-step">
+        <div class="cf-step__circle">02</div>
+        <span class="cf-step__label">Affectation</span>
+      </div>
+      <div class="cf-step__line"></div>
+      <div class="cf-step">
+        <div class="cf-step__circle">03</div>
+        <span class="cf-step__label">Planification</span>
+      </div>
+    </div>
+
+    <!-- ░░ Form ░░ -->
+    <form [formGroup]="chantierForm" (ngSubmit)="onSubmit()" *ngIf="!loading" class="cf-form">
+
+      <!-- ── Section 01 : Identification ── -->
+      <div class="cf-section">
+        <div class="cf-section__head">
+          <div class="cf-section__num-badge">01</div>
+          <div>
+            <h2 class="cf-section__title">Identification</h2>
+            <p class="cf-section__desc">Informations générales sur le chantier</p>
+          </div>
+        </div>
+
+        <div class="cf-section__body">
+          <div class="cf-row">
+            <div class="cf-field cf-field--grow">
+              <label class="cf-label">Nom du chantier <span class="cf-req">*</span></label>
+              <input type="text" class="cf-input" formControlName="nom"
+                     placeholder="Ex : Maintenance pylône nord Sfax"
+                     [class.cf-input--error]="submitted && f['nom'].invalid">
+              <div class="cf-error" *ngIf="submitted && f['nom'].errors?.['required']">Champ obligatoire</div>
+              <div class="cf-error" *ngIf="submitted && f['nom'].errors?.['minlength']">Minimum 3 caractères</div>
+            </div>
+
+            <div class="cf-field cf-field--fixed">
+              <label class="cf-label">Type <span class="cf-req">*</span></label>
+              <div class="cf-select-wrap">
+                <select class="cf-select" formControlName="typeChantier"
+                        [class.cf-input--error]="submitted && f['typeChantier'].invalid">
+                  <option value="">Choisir...</option>
+                  <option *ngFor="let type of typesChantier" [value]="type.value">{{ type.label }}</option>
+                </select>
+                <svg class="cf-select__arrow" viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+                  <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+              <div class="cf-error" *ngIf="submitted && f['typeChantier'].invalid">Obligatoire</div>
+            </div>
+          </div>
+
+          <div class="cf-field">
+            <label class="cf-label">Description <span class="cf-req">*</span></label>
+            <textarea class="cf-textarea" formControlName="description" rows="3"
+                      placeholder="Décrivez les travaux à effectuer, les équipements concernés..."
+                      [class.cf-input--error]="submitted && f['description'].invalid"></textarea>
+            <div class="cf-error" *ngIf="submitted && f['description'].errors?.['required']">Champ obligatoire</div>
+            <div class="cf-error" *ngIf="submitted && f['description'].errors?.['minlength']">Minimum 10 caractères</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Section 02 : Affectation ── -->
+      <div class="cf-section">
+        <div class="cf-section__head">
+          <div class="cf-section__num-badge">02</div>
+          <div>
+            <h2 class="cf-section__title">Affectation</h2>
+            <p class="cf-section__desc">Pylône cible et technicien responsable</p>
+          </div>
+        </div>
+
+        <div class="cf-section__body">
+
+          <!-- Pylône -->
+          <div class="cf-field">
+            <label class="cf-label">
+              Pylône <span class="cf-req">*</span>
+              <span class="cf-label__count">{{ pylonesFiltres.length }} disponible(s)</span>
+            </label>
+
+            <div *ngIf="pylonesFiltres.length === 0" class="cf-alert cf-alert--warn">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+              </svg>
+              Aucun pylône disponible dans la région <strong>{{ currentUserRegion }}</strong>
+            </div>
+
+            <div class="cf-select-wrap" *ngIf="pylonesFiltres.length > 0">
+              <select class="cf-select" formControlName="pyloneId"
+                      [class.cf-input--error]="submitted && f['pyloneId'].invalid">
+                <option value="">-- Sélectionner un pylône --</option>
+                <option *ngFor="let pylone of pylonesFiltres" [value]="pylone.id" [disabled]="pylone.estBloque">
+                  {{ pylone.nom }}
+                  <ng-container *ngIf="pylone.zoneNom"> · {{ pylone.zoneNom }}</ng-container>
+                  <ng-container *ngIf="pylone.estBloque"> — Bloqué</ng-container>
+                </option>
+              </select>
+              <svg class="cf-select__arrow" viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+              </svg>
+            </div>
+            <div class="cf-error" *ngIf="submitted && f['pyloneId'].errors?.['required']">Sélectionner un pylône</div>
+          </div>
+
+          <!-- Technicien -->
+          <div class="cf-field">
+            <label class="cf-label">Technicien responsable</label>
+            <div class="cf-tech-card">
+              <div class="cf-tech-card__avatar">
+                {{ currentUserName?.charAt(0)?.toUpperCase() || 'T' }}
+              </div>
+              <div class="cf-tech-card__info">
+                <span class="cf-tech-card__name">{{ currentUserName }}</span>
+                <span class="cf-tech-card__sub">Assigné automatiquement · {{ currentUserRegion }}</span>
+              </div>
+              <div class="cf-tech-card__badge">Vous</div>
+            </div>
+            <input type="hidden" formControlName="technicienId">
+            <input type="hidden" formControlName="technicienNom">
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── Section 03 : Planification ── -->
+      <div class="cf-section">
+        <div class="cf-section__head">
+          <div class="cf-section__num-badge">03</div>
+          <div>
+            <h2 class="cf-section__title">Planification</h2>
+            <p class="cf-section__desc">Fenêtre temporelle d'intervention</p>
+          </div>
+        </div>
+
+        <div class="cf-section__body">
+          <div class="cf-row">
+            <div class="cf-field cf-field--grow">
+              <label class="cf-label">Date de début <span class="cf-req">*</span></label>
+              <div class="cf-input-icon-wrap">
+                <svg class="cf-input-icon" viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+                  <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+                </svg>
+                <input type="datetime-local" class="cf-input cf-input--padded" formControlName="dateDebut"
+                       [class.cf-input--error]="submitted && f['dateDebut'].invalid">
+              </div>
+              <div class="cf-error" *ngIf="submitted && f['dateDebut'].invalid">Date obligatoire</div>
+            </div>
+
+            <div class="cf-field cf-field--grow">
+              <label class="cf-label">
+                Date de fin prévue
+                <span class="cf-label__opt">optionnelle</span>
+              </label>
+              <div class="cf-input-icon-wrap">
+                <svg class="cf-input-icon" viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                </svg>
+                <input type="datetime-local" class="cf-input cf-input--padded" formControlName="dateFin">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ░░ Actions ░░ -->
+      <div class="cf-actions">
+        <a class="cf-btn cf-btn--ghost" routerLink="/map">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+            <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/>
+          </svg>
+          Annuler
+        </a>
+        <button type="submit" class="cf-btn cf-btn--primary"
+                [disabled]="loading || pylonesFiltres.length === 0">
+          <span *ngIf="loading" class="cf-spinner"></span>
+          <svg *ngIf="!loading" viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+          </svg>
+          Créer le chantier
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>

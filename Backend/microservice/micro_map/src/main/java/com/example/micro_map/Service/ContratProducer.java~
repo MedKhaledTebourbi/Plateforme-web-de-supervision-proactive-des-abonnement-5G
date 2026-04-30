@@ -1,0 +1,22 @@
+package com.example.micro_map.Service;
+
+import com.example.micro_map.Entity.ContratEvent;
+import lombok.RequiredArgsConstructor;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Component;
+
+@Component
+@RequiredArgsConstructor
+public class ContratProducer {
+
+    private static final String TOPIC = "contrats-topic";
+    private final KafkaTemplate<String, ContratEvent> kafkaTemplate;
+
+    public void envoyerEvenement(ContratEvent event) {
+        // ✅ La clé = contratId → garantit unicité + même partition
+        kafkaTemplate.send(TOPIC, event.getContratId().toString(), event);
+        System.out.println("📤 Kafka — Événement envoyé : "
+                + event.getTypeEvenement()
+                + " | ContratID=" + event.getContratId());
+    }
+}

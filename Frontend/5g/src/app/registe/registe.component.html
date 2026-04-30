@@ -1,0 +1,153 @@
+<div class="login-page">
+  <!-- Background avec image floue -->
+  <div class="telecom-background">
+    <div class="background-image"></div>
+    <div class="network-pattern"></div>
+    <div class="dots-pattern"></div>
+  </div>
+
+  <!-- Logo Tunisie Télécom en haut à gauche -->
+  <div class="header-logo">
+    <div class="logo-circle">
+      <img src="/assets/images/z.png" alt="Tunisie Télécom Logo" class="logo-img">
+    </div>
+    <span class="brand-name">Tunisie Télécom</span>
+  </div>
+
+  <!-- Formulaire de création de compte centré -->
+  <div class="login-box">
+    <div class="login-header">
+      <h1>Créer un compte</h1>
+      <p>Rejoignez l'équipe Tunisie Télécom</p>
+    </div>
+
+    <form (ngSubmit)="onRegister()">
+      <!-- Supprimer le champ username du formulaire -->
+
+
+     
+
+      <div class="input-group">
+        <label for="signup-email">Email</label>
+        <div class="input-wrapper">
+          <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+            <polyline points="22,6 12,13 2,6"></polyline>
+          </svg>
+          <input 
+            type="email" 
+            id="signup-email" 
+            [(ngModel)]="user.email" 
+            name="email" 
+            placeholder="exemple@email.com"
+            required
+          />
+        </div>
+        <span class="error-text" *ngIf="signupErrors.email">{{ signupErrors.email }}</span>
+      </div>
+
+      <div class="input-group">
+        <label for="signup-password">Mot de passe</label>
+        <div class="input-wrapper">
+          <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <input 
+            type="password" 
+            id="signup-password" 
+            [(ngModel)]="user.password" 
+            name="password" 
+            placeholder="Minimum 6 caractères"
+            required
+          />
+        </div>
+        <span class="error-text" *ngIf="signupErrors.password">{{ signupErrors.password }}</span>
+      </div>
+
+      <div class="input-group">
+        <label for="signup-role">Rôle</label>
+        <div class="input-wrapper">
+          <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          <select 
+            id="signup-role" 
+            [(ngModel)]="user.role" 
+            name="role" 
+            required
+          >
+            <option value="">Sélectionnez un rôle</option>
+             <option value="CHEF">chef</option>
+            <option value="TECHNICIEN">Technicien</option>
+             <option value="ADMIN">Admin</option>
+          </select>
+        </div>
+        <span class="error-text" *ngIf="signupErrors.role">{{ signupErrors.role }}</span>
+      </div>
+      <div class="input-group">
+  <label for="signup-region">Région</label>
+  <div class="input-wrapper">
+    <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <path d="M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z"></path>
+      <circle cx="12" cy="9" r="2.5"></circle>
+    </svg>
+
+    <select 
+      id="signup-region" 
+      [(ngModel)]="user.region" 
+      name="region" 
+      required
+    >
+      <option value="">Sélectionnez une région</option>
+      <option value="Ariana">Ariana</option>
+      <option value="Béja">Béja</option>
+      <option value="Ben Arous">Ben Arous</option>
+      <option value="Bizerte">Bizerte</option>
+      <option value="Gabès">Gabès</option>
+      <option value="Gafsa">Gafsa</option>
+      <option value="Jendouba">Jendouba</option>
+      <option value="Kairouan">Kairouan</option>
+      <option value="Kasserine">Kasserine</option>
+      <option value="Kébili">Kébili</option>
+      <option value="Kef">Le Kef</option>
+      <option value="Mahdia">Mahdia</option>
+      <option value="Manouba">Manouba</option>
+      <option value="Médenine">Médenine</option>
+      <option value="Monastir">Monastir</option>
+      <option value="Nabeul">Nabeul</option>
+      <option value="Sfax">Sfax</option>
+      <option value="Sidi Bouzid">Sidi Bouzid</option>
+      <option value="Siliana">Siliana</option>
+      <option value="Sousse">Sousse</option>
+      <option value="Tataouine">Tataouine</option>
+      <option value="Tozeur">Tozeur</option>
+      <option value="Tunis">Tunis</option>
+      <option value="Zaghouan">Zaghouan</option>
+    </select>
+  </div>
+
+  <span class="error-text" *ngIf="signupErrors.region">
+    {{ signupErrors.region }}
+  </span>
+</div>
+
+      <button type="submit" class="login-btn">
+        Créer mon compte
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="8.5" cy="7" r="4"></circle>
+          <line x1="20" y1="8" x2="20" y2="14"></line>
+          <line x1="23" y1="11" x2="17" y2="11"></line>
+        </svg>
+      </button>
+    </form>
+
+    <div class="footer-text">
+      <p>&copy; 2026 Tunisie Télécom - Tous droits réservés</p>
+    </div>
+  </div>
+</div>

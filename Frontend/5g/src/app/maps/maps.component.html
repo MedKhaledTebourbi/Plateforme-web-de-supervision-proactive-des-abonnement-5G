@@ -1,0 +1,638 @@
+<!-- maps.component.html -->
+<div class="dashboard-wrapper">
+
+  <!-- ═══════════════════════════════════════════════════════ SIDEBAR NAV -->
+  <aside class="sidebar" [class.collapsed]="sidebarCollapsed">
+    <div class="sidebar-header">
+      <div class="logo-block">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <span class="logo-text">TuniNet</span>
+      </div>
+      <button class="collapse-btn" (click)="sidebarCollapsed = !sidebarCollapsed">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </button>
+    </div>
+
+    <nav class="nav-links">
+      <a class="nav-item" routerLink="/dashboard" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+        </span>
+        <span class="nav-label">Tableau de bord</span>
+      </a>
+
+      <a class="nav-item active"  (click)="showAll()" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+            <line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/>
+          </svg>
+        </span>
+        <span class="nav-label">Carte Réseau</span>
+        <span class="nav-badge">Live</span>
+      </a>
+
+      <a class="nav-item" (click)="showOnlyZones()" routerLinkActive="active" *ngIf="currentUserRole === 'TECHNICIEN'">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/>
+            <line x1="12" y1="2" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="22"/>
+            <line x1="2" y1="12" x2="8" y2="12"/><line x1="16" y1="12" x2="22" y2="12"/>
+          </svg>
+        </span>
+        <span class="nav-label">Zones Réseau</span>
+      </a>
+      <a class="nav-item"
+  routerLink="/zone"
+  routerLinkActive="active"
+  *ngIf="currentUserRole === 'CHEF'">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/>
+            <line x1="12" y1="2" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="22"/>
+            <line x1="2" y1="12" x2="8" y2="12"/><line x1="16" y1="12" x2="22" y2="12"/>
+          </svg>
+        </span>
+        <span class="nav-label">Zones Réseau</span>
+      </a>
+
+      <a class="nav-item" (click)="showOnlyPylones()" routerLinkActive="active"  *ngIf="currentUserRole === 'TECHNICIEN'">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M12 2l3 6H9l3-6z"/><line x1="12" y1="8" x2="12" y2="22"/>
+            <path d="M7 12H5l7-4 7 4h-2"/><path d="M9 17H7l5-3 5 3h-2"/>
+          </svg>
+        </span>
+        <span class="nav-label">Pylônes</span>
+      </a>
+       <a class="nav-item"
+  routerLink="/pylone"
+  routerLinkActive="active"
+  *ngIf="currentUserRole === 'CHEF'">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M12 2l3 6H9l3-6z"/><line x1="12" y1="8" x2="12" y2="22"/>
+            <path d="M7 12H5l7-4 7 4h-2"/><path d="M9 17H7l5-3 5 3h-2"/>
+          </svg>
+        </span>
+        <span class="nav-label">Pylônes</span>
+      </a>
+     <a 
+  class="nav-item"
+  routerLink="/chantiers"
+  routerLinkActive="active"
+  *ngIf="currentUserRole === 'CHEF'"
+>
+  <span class="nav-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <path d="M3 21h18"/>
+      <path d="M5 21V7l8-4v18"/>
+      <path d="M19 21V11l-6-4"/>
+    </svg>
+  </span>
+  <span class="nav-label">Chantiers</span>
+</a>
+<a 
+  class="nav-item"
+  routerLink="/liste"
+  routerLinkActive="active"
+  *ngIf="currentUserRole === 'TECHNICIEN'"
+>
+  <span class="nav-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <path d="M3 21h18"/>
+      <path d="M5 21V7l8-4v18"/>
+      <path d="M19 21V11l-6-4"/>
+    </svg>
+  </span>
+  <span class="nav-label">Chantiers</span>
+</a>
+<a class="nav-item" routerLink="/ticket" routerLinkActive="active">
+  <span class="nav-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <path d="M3 9V5a2 2 0 0 1 2-2h4"/>
+      <path d="M21 9V5a2 2 0 0 0-2-2h-4"/>
+      <path d="M3 15v4a2 2 0 0 0 2 2h4"/>
+      <path d="M21 15v4a2 2 0 0 1-2 2h-4"/>
+      <line x1="9" y1="12" x2="15" y2="12"/>
+    </svg>
+  </span>
+  <span class="nav-label">Tickets</span>
+  <span class="nav-badge">New</span>
+</a>
+
+     <a *ngIf="isAdmin" class="nav-item" routerLink="/userback" routerLinkActive="active">
+  <span class="nav-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+  </span>
+  <span class="nav-label">Utilisateurs</span>
+</a>
+ <a class="nav-item" routerLink="/Report" routerLinkActive="active">
+  <span class="nav-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <path d="M3 21h18"/>
+      <path d="M5 21V7l8-4v18"/>
+      <path d="M19 21V11l-6-4"/>
+    </svg>
+  </span>
+  <span class="nav-label">Report</span>
+</a>
+
+      <a class="nav-item" routerLink="/dashboard" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+            <line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>
+          </svg>
+        </span>
+        <span class="nav-label">Statistiques</span>
+      </a>
+
+      <div class="nav-divider"></div>
+
+      <a class="nav-item" routerLink="/parametres" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </span>
+        <span class="nav-label">Paramètres</span>
+      </a>
+    </nav>
+
+    <!-- User profile at bottom of sidebar -->
+    <div class="sidebar-user">
+      <div class="user-avatar">{{ currentUserInitials }}</div>
+      <div class="user-info">
+        <span class="user-name">{{ currentUsername }}</span>
+        <span class="user-role-badge">{{ currentUserRole }}</span>
+      </div>
+      <button class="logout-btn" (click)="logout()" title="Déconnexion">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ═══════════════════════════════════════════════════════ MAIN CONTENT -->
+  <main class="main-content">
+
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <h1 class="page-title">
+          <span class="title-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+            </svg>
+          </span>
+          Carte Réseau
+        </h1>
+        <div class="breadcrumb">
+          <span>Accueil</span>
+          <span class="sep">›</span>
+          <span class="current">Carte Réseau</span>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <!-- Live status indicator -->
+        <div class="live-indicator">
+          <span class="pulse-dot"></span>
+          <span>Temps réel</span>
+        </div>
+
+        <!-- Stats chips -->
+        <div class="stat-chips">
+          <div class="chip chip-green">
+            <span class="chip-dot"></span>
+            <span>{{ zonesActives }} zones actives</span>
+          </div>
+          <div class="chip chip-blue">
+            <span>{{ totalPylones }} pylônes</span>
+          </div>
+        </div>
+
+        <!-- Filter toggle -->
+        <button class="icon-btn" (click)="toggleFilters()" [class.active]="showFilters" title="Filtres">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/>
+            <line x1="11" y1="18" x2="13" y2="18"/>
+          </svg>
+        </button>
+
+        <!-- Notifications -->
+        <!-- Bouton notification existant -->
+<button class="icon-btn notif-btn" title="Alertes" (click)="toggleTicketPanel()">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+  </svg>
+  <span class="notif-badge" *ngIf="alertCount > 0">{{ alertCount }}</span>
+</button>
+
+<!-- ✅ Panel tickets -->
+<div class="ticket-panel" *ngIf="showTicketPanel">
+
+  <!-- LISTE DES TICKETS -->
+  <div *ngIf="!selectedTicket">
+    <div class="panel-header">
+      <h3>Mes Tickets ({{ tickets.length }})</h3>
+      <button class="close-btn" (click)="toggleTicketPanel()">✕</button>
+    </div>
+
+    <div class="panel-body">
+      <div *ngIf="tickets.length === 0" class="empty-msg">
+        Aucun ticket en cours.
+      </div>
+
+      <div class="ticket-item"
+           *ngFor="let ticket of tickets"
+           (click)="voirDetail(ticket)">
+        <div class="ticket-item-header">
+          <span class="zone-nom">{{ ticket.zoneNom }}</span>
+          <span class="statut-badge"
+                [ngClass]="{
+                  'statut-ouvert':   ticket.statut === 'OUVERT',
+                  'statut-encours':  ticket.statut === 'EN_COURS',
+                  'statut-clos':     ticket.statut === 'CLOS'
+                }">
+            {{ ticket.statut }}
+          </span>
+        </div>
+        <div class="ticket-item-sub">
+          {{ ticket.typePanne }} — {{ ticket.region }}
+        </div>
+        <div class="ticket-item-count">
+          {{ ticket.nombreReclamations }} réclamations
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DETAIL D'UN TICKET -->
+  <div *ngIf="selectedTicket">
+    <div class="panel-header">
+      <button class="back-btn" (click)="retourListe()">← Retour</button>
+      <button class="close-btn" (click)="toggleTicketPanel()">✕</button>
+    </div>
+
+    <div class="panel-body">
+      <h3>Ticket #{{ selectedTicket.id }}</h3>
+
+      <div class="detail-row">
+        <span class="detail-label">Zone</span>
+        <span>{{ selectedTicket.zoneNom }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Région</span>
+        <span>{{ selectedTicket.region }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Type panne</span>
+        <span>{{ selectedTicket.typePanne }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Réclamations</span>
+        <span>{{ selectedTicket.nombreReclamations }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Statut</span>
+        <span class="statut-badge"
+              [ngClass]="{
+                'statut-ouvert':  selectedTicket.statut === 'OUVERT',
+                'statut-encours': selectedTicket.statut === 'EN_COURS',
+                'statut-clos':    selectedTicket.statut === 'CLOS'
+              }">
+          {{ selectedTicket.statut }}
+        </span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Créé par</span>
+        <span>{{ selectedTicket.createdByName }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Mis à jour par</span>
+        <span>{{ selectedTicket.updatedByName || '-' }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Date création</span>
+        <span>{{ selectedTicket.dateCreation | date:'dd/MM/yyyy HH:mm' }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Date maj</span>
+        <span>{{ selectedTicket.dateMaj ? (selectedTicket.dateMaj | date:'dd/MM/yyyy HH:mm') : '-' }}</span>
+      </div>
+      <div class="card">
+            <div class="card-header bg-info text-white">
+              <i class="fas fa-comment-medical"></i> Ajouter une intervention
+            </div>
+            <div class="card-body">
+              <form [formGroup]="interventionForm" (ngSubmit)="ajouterIntervention()">
+                <div class="form-group">
+                  <textarea class="form-control" 
+                            rows="3" 
+                            formControlName="intervention"
+                            placeholder="Décrivez l'intervention réalisée..."></textarea>
+                  <div class="invalid-feedback" *ngIf="interventionForm.get('intervention')?.invalid && interventionForm.get('intervention')?.touched">
+                    La description est requise (minimum 10 caractères)
+                  </div>
+                </div>
+                <button type="submit" 
+                        class="btn btn-primary btn-block"
+                        [disabled]="interventionForm.invalid || loading">
+                  <i class="fas fa-save"></i> Ajouter l'intervention
+                </button>
+              </form>
+            </div>
+          </div>
+
+      <!-- Actions -->
+      <div class="detail-actions">
+        <button *ngIf="selectedTicket.statut === 'OUVERT'"
+                class="btn-action btn-encours"
+                (click)="changerStatut(selectedTicket, 'EN_COURS')">
+          Mettre en cours
+        </button>
+        <button *ngIf="selectedTicket.statut !== 'CLOS'"
+                class="btn-action btn-clos"
+                (click)="changerStatut(selectedTicket, 'CLOS')">
+          Clore le ticket
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+        <!-- User menu -->
+        <div class="user-menu-trigger" (click)="toggleUserMenu()" [class.open]="userMenuOpen">
+          <div class="avatar-sm">{{ currentUserInitials }}</div>
+          <div class="user-meta">
+            <span class="meta-name">{{ currentUsername }}</span>
+            <span class="meta-role">{{ currentUserRole }}</span>
+          </div>
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+
+          <!-- Dropdown -->
+          <div class="user-dropdown" *ngIf="userMenuOpen">
+            <div class="dropdown-header">
+              <div class="avatar-lg">{{ currentUserInitials }}</div>
+              <div>
+                <div class="dh-name">{{ currentUsername }}</div>
+                <div class="dh-role">{{ currentUserRole }}</div>
+              </div>
+            </div>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" routerLink="/profile">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              Mon profil
+            </a>
+            <a class="dropdown-item" routerLink="/parametres">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+              Paramètres
+            </a>
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-item danger" (click)="logout()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+              Déconnexion
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- FILTER PANEL -->
+    <div class="filter-panel" [class.visible]="showFilters">
+      <div class="filter-group">
+        <label>Afficher</label>
+        <div class="toggle-group">
+          <button class="toggle-btn" [class.active]="showZones" (click)="showZones = !showZones">
+            <span class="dot dot-colored"></span> Zones réseau
+          </button>
+          <button class="toggle-btn" [class.active]="showPylones" (click)="showPylones = !showPylones">
+            <span class="dot dot-blue"></span> Pylônes
+          </button>
+          <button class="toggle-btn" [class.active]="showConnections" (click)="showConnections = !showConnections">
+            <span class="dot dot-dashed"></span> Connexions
+          </button>
+        </div>
+      </div>
+      <div class="filter-group">
+        <label>Statut de charge</label>
+        <div class="toggle-group">
+          <button class="toggle-btn active filter-green">Normale (&lt;60%)</button>
+          <button class="toggle-btn active filter-orange">Moyenne (60-80%)</button>
+          <button class="toggle-btn active filter-red">Critique (&gt;80%)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAP CONTAINER -->
+    <div class="map-wrapper">
+      <div id="map"></div>
+
+      <!-- Map Legend -->
+      <div class="map-legend">
+        <div class="legend-title">Charge réseau</div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background:#22c55e"></span>
+          <span>Normale &lt; 60%</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background:#f97316"></span>
+          <span>Moyenne 60–80%</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background:#ef4444"></span>
+          <span>Critique &gt; 80%</span>
+        </div>
+        <div class="legend-divider"></div>
+        <div class="legend-item">
+          <img src="https://cdn-icons-png.flaticon.com/512/684/684908.png" width="14" height="14" alt="pylone">
+          <span>Pylône</span>
+        </div>
+      </div>
+
+      <!-- Zoom controls custom -->
+      <div class="map-controls">
+        <button class="map-ctrl-btn" (click)="zoomIn()" title="Zoom +">+</button>
+        <button class="map-ctrl-btn" (click)="zoomOut()" title="Zoom −">−</button>
+        <button class="map-ctrl-btn" (click)="resetView()" title="Vue par défaut">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <!-- ═══════════════════════ PANNEAU IA AUTOMATIQUE ══════════════ -->
+<div class="ia-panel" *ngIf="!iaLoading">
+
+  <!-- En-tête -->
+  <div class="ia-panel-header">
+    <div class="ia-title">
+      <span class="ia-dot" [class.ia-dot--alert]="criticalZones.length > 0"></span>
+      Supervision IA
+    </div>
+    <span class="ia-refresh-label">Actualisation 60s</span>
+  </div>
+
+  <!-- KPIs globaux -->
+  <div class="ia-kpis" *ngIf="globalStats">
+    <div class="ia-kpi ia-kpi--green">
+      <span class="ia-kpi-val">{{ globalStats.zonesNormales }}</span>
+      <span class="ia-kpi-label">Normales</span>
+    </div>
+    <div class="ia-kpi ia-kpi--orange">
+      <span class="ia-kpi-val">{{ globalStats.zonesEnAttention }}</span>
+      <span class="ia-kpi-label">Attention</span>
+    </div>
+    <div class="ia-kpi ia-kpi--red">
+      <span class="ia-kpi-val">{{ globalStats.zonesSaturees }}</span>
+      <span class="ia-kpi-label">Saturées</span>
+    </div>
+    <div class="ia-kpi ia-kpi--dark">
+      <span class="ia-kpi-val">{{ globalStats.zonesCritiques }}</span>
+      <span class="ia-kpi-label">Critiques</span>
+    </div>
+  </div>
+
+  <!-- Alerte prochaine saturation -->
+  <div class="ia-alert-next" *ngIf="prochaineSaturation">
+    <div class="ia-alert-icon">⚠</div>
+    <div class="ia-alert-body">
+      <span class="ia-alert-zone">{{ prochaineSaturation.zoneNom }}</span>
+      <span class="ia-alert-time">
+        {{ getUrgenceLabel(prochaineSaturation.heuresAvantSaturation) }}
+      </span>
+    </div>
+    <div class="ia-alert-conf">
+      Conf. {{ (prochaineSaturation.confidencePrediction * 100) | number:'1.0-0' }}%
+    </div>
+  </div>
+
+  <!-- Liste zones saturées / critiques -->
+  <div class="ia-zones-list" *ngIf="saturatedZones.length > 0">
+    <div class="ia-zones-title">Zones à surveiller</div>
+    <div class="ia-zone-row"
+         *ngFor="let r of saturatedZones.slice(0, 5)"
+         [style.border-left-color]="getStatutColor(r.statut)">
+
+      <div class="ia-zone-left">
+        <span class="ia-zone-name">{{ r.zoneNom }}</span>
+        <span class="ia-zone-sub">
+          {{ r.nbPylonesSatures }}/{{ r.nbPylonesTotal }} pylônes —
+          score {{ r.anomalyScore | number:'1.0-2' }}
+        </span>
+      </div>
+
+      <div class="ia-zone-right">
+        <span class="ia-zone-taux"
+              [style.color]="getStatutColor(r.statut)">
+          {{ r.tauxUtilisation | number:'1.0-1' }}%
+        </span>
+        <span class="ia-zone-pred" *ngIf="r.saturationPredite">
+          {{ getUrgenceLabel(r.heuresAvantSaturation) }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Message si tout va bien -->
+  <div class="ia-all-ok" *ngIf="saturatedZones.length === 0 && !iaLoading">
+    Réseau nominal — aucune anomalie détectée
+  </div>
+
+</div>
+
+<!-- Skeleton loader pendant chargement IA -->
+<div class="ia-panel ia-panel--loading" *ngIf="iaLoading">
+  <div class="ia-skeleton ia-skeleton--title"></div>
+  <div class="ia-skeleton ia-skeleton--kpis"></div>
+  <div class="ia-skeleton ia-skeleton--row"></div>
+  <div class="ia-skeleton ia-skeleton--row"></div>
+</div>
+
+    <!-- BOTTOM STATS ROW -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-icon green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ zonesNormales }}</span>
+          <span class="stat-label">Zones normales</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon orange">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ zonesMoyennes }}</span>
+          <span class="stat-label">Zones moyennes</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon red">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ zonesCritiques }}</span>
+          <span class="stat-label">Zones critiques</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M12 2l3 6H9l3-6z"/><line x1="12" y1="8" x2="12" y2="22"/>
+            <path d="M7 12H5l7-4 7 4h-2"/>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ totalPylones }}</span>
+          <span class="stat-label">Pylônes actifs</span>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>

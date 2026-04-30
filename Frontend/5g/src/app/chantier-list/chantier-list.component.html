@@ -1,0 +1,317 @@
+<div class="app-layout">
+
+  <!-- ═══════════════════════════════════════════════════════ SIDEBAR -->
+  <aside class="sidebar" [class.collapsed]="sidebarCollapsed">
+
+    <div class="sidebar-header">
+      <div class="logo-block">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <span class="logo-text">TuniNet</span>
+      </div>
+      <button class="collapse-btn" (click)="sidebarCollapsed = !sidebarCollapsed" title="Réduire">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </button>
+    </div>
+
+    <nav class="nav-links">
+
+      <a class="nav-item" routerLink="/dashboard" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="3" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+            <rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+        </span>
+        <span class="nav-label">Tableau de bord</span>
+      </a>
+
+      <a class="nav-item" routerLink="/map" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+            <line x1="8" y1="2" x2="8" y2="18"/>
+            <line x1="16" y1="6" x2="16" y2="22"/>
+          </svg>
+        </span>
+        <span class="nav-label">Carte Réseau</span>
+        <span class="nav-badge nav-badge--live">Live</span>
+      </a>
+
+      <a class="nav-item" routerLink="/liste" routerLinkActive="active" *ngIf="currentUserRole === 'CHEF'">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M3 21h18"/>
+            <path d="M5 21V7l8-4v18"/>
+            <path d="M19 21V11l-6-4"/>
+          </svg>
+        </span>
+        <span class="nav-label">Chantiers</span>
+      </a>
+       <a class="nav-item" routerLink="/zones" routerLinkActive="active"  *ngIf="currentUserRole === 'CHEF'">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
+            <path d="M2 12h4M18 12h4M12 2v4M12 18v4"/>
+          </svg>
+        </span>
+        <span class="nav-label">Zones Réseau</span>
+      </a>
+
+      <a class="nav-item active" routerLink="/pylones" routerLinkActive="active"  *ngIf="currentUserRole === 'CHEF'">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <line x1="12" y1="2" x2="12" y2="22"/>
+            <path d="M8 6l4-4 4 4"/><path d="M6 10h12"/>
+            <path d="M8 14h8"/><path d="M10 18h4"/>
+          </svg>
+        </span>
+        <span class="nav-label">Pylônes</span>
+      </a>
+
+      <a class="nav-item" routerLink="/chantiers" routerLinkActive="active" *ngIf="currentUserRole === 'TECHNICIEN'">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M3 21h18"/>
+            <path d="M5 21V7l8-4v18"/>
+            <path d="M19 21V11l-6-4"/>
+          </svg>
+        </span>
+        <span class="nav-label">Chantiers</span>
+      </a>
+
+      <a class="nav-item" routerLink="/ticket" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M3 9V5a2 2 0 0 1 2-2h4"/>
+            <path d="M21 9V5a2 2 0 0 0-2-2h-4"/>
+            <path d="M3 15v4a2 2 0 0 0 2 2h4"/>
+            <path d="M21 15v4a2 2 0 0 1-2 2h-4"/>
+            <line x1="9" y1="12" x2="15" y2="12"/>
+          </svg>
+        </span>
+        <span class="nav-label">Tickets</span>
+        <span class="nav-badge nav-badge--new">New</span>
+      </a>
+
+      <a *ngIf="isAdmin" class="nav-item" routerLink="/userback" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </span>
+        <span class="nav-label">Utilisateurs</span>
+      </a>
+
+      <a class="nav-item" routerLink="/report" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+        </span>
+        <span class="nav-label">Report</span>
+      </a>
+
+      <a class="nav-item" routerLink="/statistiques" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <line x1="18" y1="20" x2="18" y2="10"/>
+            <line x1="12" y1="20" x2="12" y2="4"/>
+            <line x1="6" y1="20" x2="6" y2="14"/>
+            <line x1="2" y1="20" x2="22" y2="20"/>
+          </svg>
+        </span>
+        <span class="nav-label">Statistiques</span>
+      </a>
+
+      <div class="nav-divider"></div>
+
+      <a class="nav-item" routerLink="/parametres" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </span>
+        <span class="nav-label">Paramètres</span>
+      </a>
+
+    </nav>
+
+    <div class="sidebar-user">
+      <div class="user-avatar">{{ currentUserInitials }}</div>
+      <div class="user-info">
+        <span class="user-name">{{ currentUsername }}</span>
+        <span class="user-role-badge">{{ currentUserRole }}</span>
+      </div>
+      <button class="logout-btn" (click)="logout()" title="Déconnexion">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+    </div>
+
+  </aside>
+
+  <!-- ═══════════════════════════════════════════════════════ MAIN CONTENT -->
+  <main class="main-content" [class.expanded]="sidebarCollapsed">
+
+    <div class="cl-shell">
+
+      <!-- ░░ Header ░░ -->
+      <div class="cl-header">
+        <div class="cl-header__left">
+          <div class="cl-header__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20">
+              <path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="cl-header__title">Chantiers</h1>
+            <p class="cl-header__sub">
+              {{ chantiersFiltres.length }} chantier{{ chantiersFiltres.length > 1 ? 's' : '' }} trouvé{{ chantiersFiltres.length > 1 ? 's' : '' }}
+            </p>
+          </div>
+        </div>
+        <a class="cl-btn cl-btn--primary" routerLink="/chantiers">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+          </svg>
+          Nouveau chantier
+        </a>
+      </div>
+
+      <!-- ░░ Filters ░░ -->
+      <div class="cl-filters">
+        <div class="cl-filter-pills">
+          <button
+            *ngFor="let s of statuts"
+            class="cl-pill"
+            [class.cl-pill--active]="selectedStatut === s.value"
+            (click)="selectedStatut = s.value">
+            {{ s.label }}
+            <span class="cl-pill__count">{{ getCountByStatut(s.value) }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ░░ Loading ░░ -->
+      <div *ngIf="loading" class="cl-loading">
+        <div class="cl-loading__dots">
+          <span></span><span></span><span></span>
+        </div>
+        <p>Chargement des chantiers...</p>
+      </div>
+
+      <!-- ░░ Empty ░░ -->
+      <div *ngIf="!loading && chantiersFiltres.length === 0" class="cl-empty">
+        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.2" width="44" height="44">
+          <rect x="8" y="16" width="48" height="36" rx="4"/>
+          <path d="M8 24h48M20 8l-4 8M44 8l4 8"/>
+        </svg>
+        <p>Aucun chantier pour ce statut</p>
+      </div>
+
+      <!-- ░░ Cards Grid ░░ -->
+      <div *ngIf="!loading && chantiersFiltres.length > 0" class="cl-grid">
+
+        <div
+          *ngFor="let chantier of chantiersFiltres; let i = index"
+          class="cl-card"
+          [style.animation-delay]="i * 60 + 'ms'">
+
+          <div class="cl-card__top">
+            <div class="cl-card__meta">
+              <span class="cl-card__id">#{{ chantier.id }}</span>
+              <span class="cl-badge" [attr.data-statut]="chantier.statut">
+                {{ getStatutLabel(chantier.statut) }}
+              </span>
+            </div>
+            <span class="cl-card__type" [attr.data-type]="chantier.typeChantier">
+              {{ chantier.typeChantier }}
+            </span>
+          </div>
+
+          <h3 class="cl-card__title">{{ chantier.nom }}</h3>
+
+          <div class="cl-card__info">
+            <div class="cl-info-row">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12">
+                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+              </svg>
+              <span>{{ chantier.pyloneNom || 'Pylône #' + chantier.pyloneId }}</span>
+              <span class="cl-sep">·</span>
+              <span class="cl-region">{{ chantier.region }}</span>
+            </div>
+            <div class="cl-info-row">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12">
+                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+              </svg>
+              <span>{{ chantier.technicienNom }}</span>
+            </div>
+            <div class="cl-info-row">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12">
+                <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+              </svg>
+              <span>{{ chantier.dateDebut | date:'dd/MM/yyyy HH:mm' }}</span>
+              <ng-container *ngIf="chantier.dateFin">
+                <span class="cl-sep">→</span>
+                <span>{{ chantier.dateFin | date:'dd/MM/yyyy HH:mm' }}</span>
+              </ng-container>
+            </div>
+          </div>
+
+          <div *ngIf="chantier.pyloneBloque" class="cl-card__blocked">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="11" height="11">
+              <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
+            </svg>
+            Pylône bloqué
+          </div>
+
+         <div class="cl-card__actions" *ngIf="role === 'CHEF'">
+
+  <button
+    *ngIf="chantier.statut === 'PLANIFIE' || chantier.statut === 'EN_COURS'"
+    class="cl-action cl-action--validate"
+    (click)="validerChantier(chantier.id)">
+    Valider
+  </button>
+
+  <button
+    *ngIf="chantier.statut === 'VALIDE'"
+    class="cl-action cl-action--finish"
+    (click)="terminerChantier(chantier.id)">
+    Terminer
+  </button>
+
+  <button
+    *ngIf="chantier.statut !== 'TERMINE' && chantier.statut !== 'ANNULE'"
+    class="cl-action cl-action--cancel"
+    (click)="annulerChantier(chantier.id)">
+    Annuler
+  </button>
+
+</div>
+
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+</div>

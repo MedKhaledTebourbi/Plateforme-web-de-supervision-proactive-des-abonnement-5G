@@ -1,0 +1,4 @@
+package com.example.micro_reclamation.Entity;
+
+public enum TicketStatut {
+}

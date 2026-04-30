@@ -1,0 +1,132 @@
+package com.example.micro_reclamation.Service;
+
+
+import com.example.micro_reclamation.Entity.*;
+import com.example.micro_reclamation.Repository.*;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class ReportService {
+
+    private final TicketRepository ticketRepository;
+    private final ChantierRepository chantierRepository;
+
+    // =====================================================
+    // 📅 RAPPORT MENSUEL GLOBAL
+    // =====================================================
+    public ReportData generateMonthlyReport(int mois, int annee) {
+
+        List<Ticket> tickets = ticketRepository.findAll();
+        List<Chantier> chantiers = chantierRepository.findAll();
+
+        long totalTickets = tickets.size();
+        long ticketsClos = tickets.stream()
+                .filter(t -> "CLOS".equalsIgnoreCase(t.getStatut().name()))
+                .count();
+
+        long ticketsOuverts = totalTickets - ticketsClos;
+
+        long totalChantiers = chantiers.size();
+        long chantiersTermines = chantiers.stream()
+                .filter(c -> "TERMINE".equalsIgnoreCase(c.getStatut()))
+                .count();
+
+        // Temps moyen de résolution
+        double avgResolution = tickets.stream()
+                .filter(t -> t.getDateFinTraitement() != null && t.getDateDebutTraitement() != null)
+                .mapToLong(t ->
+                        java.time.Duration.between(
+                                t.getDateDebutTraitement(),
+                                t.getDateFinTraitement()
+                        ).toHours()
+                ).average().orElse(0);
+
+        return ReportData.builder()
+                .mois(mois)
+                .annee(annee)
+                .totalTickets(totalTickets)
+                .ticketsClos(ticketsClos)
+                .ticketsOuverts(ticketsOuverts)
+                .totalChantiers(totalChantiers)
+                .chantiersTermines(chantiersTermines)
+                .tempsMoyenResolution(avgResolution)
+                .build();
+    }
+
+    // =====================================================
+    // 👷 RAPPORT TECHNICIEN
+    // =====================================================
+    public TechnicienReportDTO getTechnicienReport(Long technicienId) {
+
+        List<Ticket> tickets = ticketRepository.findAll().stream()
+                .filter(t -> technicienId.equals(t.getUpdatedBy()))
+                .toList();
+
+        List<Chantier> chantiers = chantierRepository.findByTechnicienId(technicienId);
+
+        long ticketsClos = tickets.stream()
+                .filter(t -> "CLOS".equalsIgnoreCase(t.getStatut().name()))
+                .count();
+
+        long chantiersTermines = chantiers.stream()
+                .filter(c -> "TERMINE".equalsIgnoreCase(c.getStatut()))
+                .count();
+
+        double performance = (ticketsClos + chantiersTermines) * 100.0 /
+                (tickets.size() + chantiers.size() + 1);
+
+        return TechnicienReportDTO.builder()
+                .technicienId(technicienId)
+                .ticketsTraites(tickets.size())
+                .ticketsClos(ticketsClos)
+                .chantiersRealises(chantiers.size())
+                .chantiersTermines(chantiersTermines)
+                .performance(performance)
+                .build();
+    }
+
+    // =====================================================
+    // 📡 QUALITÉ DE SERVICE (QoS)
+    // =====================================================
+    public QoSReportDTO getQoSReport() {
+
+        List<Ticket> tickets = ticketRepository.findAll();
+
+        long resolved = tickets.stream()
+                .filter(t -> "CLOS".equalsIgnoreCase(t.getStatut().name()))
+                .count();
+
+        double avgResolution = tickets.stream()
+                .filter(t -> t.getDateFinTraitement() != null)
+                .mapToLong(t ->
+                        java.time.Duration.between(
+                                t.getDateCreation(),
+                                t.getDateFinTraitement()
+                        ).toHours()
+                ).average().orElse(0);
+
+        double satisfaction = resolved * 100.0 / (tickets.size() + 1);
+
+        double disponibilite = 100 - (tickets.size() * 0.5); // exemple logique
+
+        return QoSReportDTO.builder()
+                .tempsMoyenResolution(avgResolution)
+                .tauxSatisfaction(satisfaction)
+                .disponibiliteReseau(disponibilite)
+                .totalIncidents(tickets.size())
+                .incidentsResolus(resolved)
+                .build();
+    }
+}

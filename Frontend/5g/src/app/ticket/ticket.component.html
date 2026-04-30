@@ -1,0 +1,746 @@
+<!-- ticket.component.html -->
+ <div class="app-layout">
+  <aside class="sidebar" [class.collapsed]="sidebarCollapsed">
+ 
+    <div class="sidebar-header">
+      <div class="logo-block">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <span class="logo-text">TuniNet</span>
+      </div>
+      <button class="collapse-btn" (click)="sidebarCollapsed = !sidebarCollapsed" title="Réduire">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </button>
+    </div>
+ 
+    <nav class="nav-links">
+ 
+      <a class="nav-item" routerLink="/dashboard" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="3" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+            <rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+        </span>
+        <span class="nav-label">Tableau de bord</span>
+      </a>
+ 
+      <a class="nav-item" routerLink="/map" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+            <line x1="8" y1="2" x2="8" y2="18"/>
+            <line x1="16" y1="6" x2="16" y2="22"/>
+          </svg>
+        </span>
+        <span class="nav-label">Carte Réseau</span>
+        <span class="nav-badge nav-badge--live">Live</span>
+      </a>
+         <a class="nav-item"
+  routerLink="/pylone"
+  routerLinkActive="active"
+  *ngIf="currentUserRole === 'CHEF'">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M12 2l3 6H9l3-6z"/><line x1="12" y1="8" x2="12" y2="22"/>
+            <path d="M7 12H5l7-4 7 4h-2"/><path d="M9 17H7l5-3 5 3h-2"/>
+          </svg>
+        </span>
+        <span class="nav-label">Pylônes</span>
+      </a>
+         <a class="nav-item"
+  routerLink="/zone"
+  routerLinkActive="active"
+  *ngIf="currentUserRole === 'CHEF'">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/>
+            <line x1="12" y1="2" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="22"/>
+            <line x1="2" y1="12" x2="8" y2="12"/><line x1="16" y1="12" x2="22" y2="12"/>
+          </svg>
+        </span>
+        <span class="nav-label">Zones Réseau</span>
+      </a>
+ 
+      <a class="nav-item" routerLink="/liste" routerLinkActive="active" *ngIf="currentUserRole === 'CHEF'">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M3 21h18"/>
+            <path d="M5 21V7l8-4v18"/>
+            <path d="M19 21V11l-6-4"/>
+          </svg>
+        </span>
+        <span class="nav-label">Chantiers</span>
+      </a>
+ 
+      <a class="nav-item" routerLink="/chantiers" routerLinkActive="active" *ngIf="currentUserRole === 'TECHNICIEN'">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M3 21h18"/>
+            <path d="M5 21V7l8-4v18"/>
+            <path d="M19 21V11l-6-4"/>
+          </svg>
+        </span>
+        <span class="nav-label">Chantiers</span>
+      </a>
+ 
+      <a class="nav-item" routerLink="/ticket" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M3 9V5a2 2 0 0 1 2-2h4"/>
+            <path d="M21 9V5a2 2 0 0 0-2-2h-4"/>
+            <path d="M3 15v4a2 2 0 0 0 2 2h4"/>
+            <path d="M21 15v4a2 2 0 0 1-2 2h-4"/>
+            <line x1="9" y1="12" x2="15" y2="12"/>
+          </svg>
+        </span>
+        <span class="nav-label">Tickets</span>
+        <span class="nav-badge nav-badge--new">New</span>
+      </a>
+ 
+      <a *ngIf="isAdmin" class="nav-item" routerLink="/userback" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </span>
+        <span class="nav-label">Utilisateurs</span>
+
+      </a>
+     
+      <a class="nav-item" routerLink="/Report" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+        </span>
+        <span class="nav-label">Report</span>
+      </a>
+ 
+      <a class="nav-item" routerLink="/statistiques" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <line x1="18" y1="20" x2="18" y2="10"/>
+            <line x1="12" y1="20" x2="12" y2="4"/>
+            <line x1="6" y1="20" x2="6" y2="14"/>
+            <line x1="2" y1="20" x2="22" y2="20"/>
+          </svg>
+        </span>
+        <span class="nav-label">Statistiques</span>
+      </a>
+ 
+      <div class="nav-divider"></div>
+ 
+      <a class="nav-item" routerLink="/parametres" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </span>
+        <span class="nav-label">Paramètres</span>
+      </a>
+ 
+    </nav>
+ 
+    <div class="sidebar-user">
+      <div class="user-avatar">{{ currentUserInitials }}</div>
+      <div class="user-info">
+        <span class="user-name">{{  currentUserName }}</span>
+        <span class="user-role-badge">{{ currentUserRole }}</span>
+      </div>
+      <button class="logout-btn" (click)="logout()" title="Déconnexion">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+    </div>
+ 
+  </aside>
+ <div class="tc-shell">
+
+  <!-- ░░ TOP BAR ░░ -->
+  <header class="tc-topbar">
+    <div class="tc-topbar__left">
+      <div class="tc-topbar__icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+          <rect x="9" y="3" width="6" height="4" rx="1"/>
+          <path d="M9 12h6M9 16h4"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="tc-topbar__title">Tickets d'incidents</h1>
+        <p class="tc-topbar__sub">Suivi en temps réel · {{ tickets.length }} ticket{{ tickets.length > 1 ? 's' : '' }}</p>
+      </div>
+    </div>
+    <div class="tc-topbar__right">
+      <span *ngIf="loading" class="tc-loader">
+        <span></span><span></span><span></span>
+      </span>
+    </div>
+  </header>
+
+  <!-- ░░ FLASH MESSAGE ░░ -->
+  <div *ngIf="messageGeneration" class="tc-flash" [class.tc-flash--error]="messageGeneration.includes('Erreur')">
+    <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+      <path *ngIf="!messageGeneration.includes('Erreur')" fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+      <path *ngIf="messageGeneration.includes('Erreur')" fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+    </svg>
+    {{ messageGeneration }}
+  </div>
+
+  <!-- ░░ STATS (Admin) ░░ -->
+  <div *ngIf="globalStats && currentUserRole === 'ADMIN'" class="tc-stats">
+
+    <div class="tc-stat tc-stat--blue">
+      <span class="tc-stat__num">{{ globalStats.ticketsTraites || 0 }}</span>
+      <span class="tc-stat__lbl">Traités</span>
+    </div>
+
+    <div class="tc-stat tc-stat--green">
+      <span class="tc-stat__num">{{ formatDuree(globalStats.tempsMoyenTraitementMinutes) }}</span>
+      <span class="tc-stat__lbl">Temps moyen</span>
+    </div>
+
+    <div class="tc-stat tc-stat--wide">
+      <span class="tc-stat__section-lbl">Répartition par statut</span>
+      <div class="tc-pills">
+        <div *ngFor="let statut of statutsDisponibles" class="tc-pill" [attr.data-statut]="statut">
+          <span class="tc-pill__count">{{ globalStats.repartitionStatuts?.[statut] ?? 0 }}</span>
+          <span class="tc-pill__name">{{ getStatutLabel(statut) }}</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ░░ FILTERS ░░ -->
+  <div class="tc-filters">
+    <div class="tc-filter-grid">
+
+      <div class="tc-field">
+        <label class="tc-field__label">Recherche</label>
+        <div class="tc-field__input-wrap">
+          
+          <input type="text" class="tc-field__input" placeholder="Zone, région, type…"
+                 [(ngModel)]="filterRecherche" (input)="applyFilters()">
+        </div>
+      </div>
+
+      <div class="tc-field">
+        <label class="tc-field__label">Statut</label>
+        <select class="tc-field__select" [(ngModel)]="filterStatut" (change)="applyFilters()">
+          <option value="TOUS">Tous</option>
+          <option *ngFor="let s of statutsDisponibles" [value]="s">{{ getStatutLabel(s) }}</option>
+        </select>
+      </div>
+
+      <div class="tc-field">
+        <label class="tc-field__label">Du</label>
+        <input type="date" class="tc-field__input" [(ngModel)]="filterDateDebut" (change)="applyFilters()">
+      </div>
+
+      <div class="tc-field">
+        <label class="tc-field__label">Au</label>
+        <input type="date" class="tc-field__input" [(ngModel)]="filterDateFin" (change)="applyFilters()">
+      </div>
+
+      <div class="tc-field" *ngIf="currentUserRole === 'ADMIN'">
+        <label class="tc-field__label">Région</label>
+        <select class="tc-field__select" [(ngModel)]="selectedRegion" (change)="loadTickets()">
+          <option value="">Toutes</option>
+          <option *ngFor="let r of regions" [value]="r">{{ r }}</option>
+        </select>
+      </div>
+
+      <div class="tc-field tc-field--action">
+        <button class="tc-btn tc-btn--ghost" (click)="resetFilters()">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+            <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+          </svg>
+          Réinitialiser
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ░░ TABLE ░░ -->
+  <div class="tc-table-wrap">
+    <table class="tc-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Zone</th>
+          <th>Région</th>
+          <th>Type panne</th>
+          <th>Réclamations</th>
+          <th>Statut</th>
+          <th>Créé par</th>
+          <th>prio</th>
+          <th>Date</th>
+          <th>action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let ticket of paginatedTickets; let i = index"
+            class="tc-row"
+            [style.animation-delay]="i * 40 + 'ms'"
+            (click)="ouvrirDetailsTicket(ticket)">
+
+          <td><span class="tc-id">#{{ ticket.id }}</span></td>
+
+          <td>
+            <div class="tc-zone">
+              <span class="tc-zone__dot"></span>
+              {{ ticket.zoneNom }}
+            </div>
+          </td>
+
+          <td><span class="tc-region">{{ ticket.region }}</span></td>
+
+          <td>
+            <span class="tc-panne" [class.tc-panne--critique]="ticket.typePanne?.includes('CRITIQUE')"
+                                   [class.tc-panne--majeure]="ticket.typePanne?.includes('MAJEURE')">
+              {{ ticket.typePanne }}
+            </span>
+          </td>
+
+          <td>
+            <span class="tc-count">{{ ticket.nombreReclamations }}</span>
+          </td>
+
+          <td>
+            <span class="tc-badge" [attr.data-statut]="ticket.statut">
+              {{ getStatutLabel(ticket.statut) }}
+            </span>
+          </td>
+
+          <td>
+            <div class="tc-user">
+              <span class="tc-user__avatar">S</span>
+              <span class="tc-user__name">System</span>
+            </div>
+          </td>
+          <td><span class="badge" [ngClass]="getPrioriteClass(ticket.priorite)">
+  {{ ticket.priorite || '...' }}
+</span></td>
+
+          <td><span class="tc-date">{{ formatDate(ticket.dateCreation) }}</span></td>
+
+          <td (click)="$event.stopPropagation()">
+            <button 
+  class="tc-btn tc-btn--icon tc-btn--guide"
+  (click)="ouvrirGuideIA(ticket); $event.stopPropagation()"
+  title="Guide IA">
+  
+  <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+    <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z"/>
+  </svg>
+
+</button>
+            <button class="tc-btn tc-btn--icon" (click)="ouvrirDetailsTicket(ticket)" title="Voir détails">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
+                <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>
+              </svg>
+            </button>
+          <button
+          
+  *ngIf="peutAffecter() && ticketAffectable(ticket)"
+  class="tc-btn tc-btn--icon tc-btn--assign"
+  (click)="ouvrirModalAffectation(ticket); $event.stopPropagation()"
+  title="{{ ticket.assignedToName ? 'Réaffecter : ' + ticket.assignedToName : 'Affecter à un technicien' }}">
+    <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+      <path d="M8 9a3 3 0 100-6 3 3 0 000 6z"/>
+      <path fill-rule="evenodd" d="M8 11a6 6 0 00-6 6h12a6 6 0 00-6-6z" clip-rule="evenodd"/>
+      <path d="M15 7v2m0 0v2m0-2h2m-2 0h-2" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+  </button>
+
+  <!-- ✅ Badge technicien affecté -->
+  <span *ngIf="ticket.assignedToName" class="tc-assigned-badge" title="Affecté à {{ ticket.assignedToName }}">
+    <svg viewBox="0 0 20 20" fill="currentColor" width="10" height="10">
+      <path d="M8 9a3 3 0 100-6 3 3 0 000 6z"/>
+    </svg>
+    {{ ticket.assignedToName }}
+  </span>
+          </td>
+
+        </tr>
+
+        <tr *ngIf="paginatedTickets.length === 0">
+          <td colspan="9">
+            <div class="tc-empty">
+              <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
+                <rect x="12" y="8" width="40" height="48" rx="4"/>
+                <path d="M22 24h20M22 32h20M22 40h12"/>
+              </svg>
+              <p>Aucun ticket trouvé</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          
+        </tr>
+
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ░░ PAGINATION ░░ -->
+  <div class="tc-pagination" *ngIf="totalPages > 1">
+    <button class="tc-page-btn" [disabled]="page === 1" (click)="previousPage()">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+        <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/>
+      </svg>
+    </button>
+    <ng-container *ngFor="let p of getPageNumbers()">
+      <button class="tc-page-btn" [class.tc-page-btn--active]="page === p" (click)="goToPage(p)" *ngIf="p !== -1">{{ p }}</button>
+      <span class="tc-page-dots" *ngIf="p === -1">…</span>
+    </ng-container>
+    <button class="tc-page-btn" [disabled]="page === totalPages" (click)="nextPage()">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+      </svg>
+    </button>
+  </div>
+
+</div>
+
+
+<!-- ░░░░░░░░░░░░░░░░░░░ MODAL ░░░░░░░░░░░░░░░░░░░ -->
+<div *ngIf="showModal" class="tc-modal-overlay" (click)="fermerModal()">
+  <div class="tc-modal" (click)="$event.stopPropagation()">
+
+    <!-- Modal header -->
+    <div class="tc-modal__header">
+      <div class="tc-modal__title-group">
+        <span class="tc-modal__id">#{{ selectedTicket?.id }}</span>
+        <h2 class="tc-modal__title">{{ selectedTicket?.zoneNom }}</h2>
+        <span class="tc-badge tc-badge--lg" [attr.data-statut]="selectedTicket?.statut">
+          {{ getStatutLabel(selectedTicket?.statut ?? TicketStatut.OUVERT) }}
+        </span>
+      </div>
+      <button class="tc-modal__close" (click)="fermerModal()">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
+          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="tc-modal__body">
+
+      <!-- Two columns -->
+      <div class="tc-modal__cols">
+
+        <!-- Info card -->
+        <div class="tc-card">
+          <div class="tc-card__header tc-card__header--blue">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+            Informations
+          </div>
+          <div class="tc-card__body">
+            <div class="tc-info-grid">
+              <span class="tc-info-grid__lbl">Zone</span>
+              <span class="tc-info-grid__val">{{ selectedTicket?.zoneNom }}</span>
+              <span class="tc-info-grid__lbl">Région</span>
+              <span class="tc-info-grid__val">{{ selectedTicket?.region }}</span>
+              <span class="tc-info-grid__lbl">Type panne</span>
+              <span class="tc-info-grid__val">
+                <span class="tc-panne" [class.tc-panne--critique]="selectedTicket?.typePanne?.includes('CRITIQUE')"
+                                       [class.tc-panne--majeure]="selectedTicket?.typePanne?.includes('MAJEURE')">
+                  {{ selectedTicket?.typePanne }}
+                </span>
+              </span>
+              <span class="tc-info-grid__lbl">Réclamations</span>
+              <span class="tc-info-grid__val"><span class="tc-count">{{ selectedTicket?.nombreReclamations }}</span></span>
+              <span class="tc-info-grid__lbl">Créé par</span>
+              <span class="tc-info-grid__val">
+                <div class="tc-user">
+                  <span class="tc-user__avatar">{{ selectedTicket?.createdByName?.charAt(0) }}</span>
+                  {{ selectedTicket?.createdByName }}
+                </div>
+              </span>
+              <span class="tc-info-grid__lbl">Création</span>
+              <span class="tc-info-grid__val tc-date">{{ formatDate(selectedTicket?.dateCreation) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metrics card -->
+        <div class="tc-card" *ngIf="ticketMetrics">
+          <div class="tc-card__header tc-card__header--green">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>
+            Métriques
+          </div>
+          <div class="tc-card__body">
+            <div class="tc-metrics">
+              <div class="tc-metric">
+                <span class="tc-metric__val">{{ formatDuree(ticketMetrics.dureePremiereReponseMinutes) }}</span>
+                <span class="tc-metric__lbl">Première réponse</span>
+              </div>
+              <div class="tc-metric">
+                <span class="tc-metric__val">{{ formatDuree(ticketMetrics.dureeTraitementMinutes) }}</span>
+                <span class="tc-metric__lbl">Durée traitement</span>
+              </div>
+              <div class="tc-metric">
+                <span class="tc-metric__val">{{ ticketMetrics.nombreChangementsStatut }}</span>
+                <span class="tc-metric__lbl">Changements statut</span>
+              </div>
+              <div class="tc-metric">
+                <span class="tc-metric__val">{{ ticketMetrics.nombreInterventions }}</span>
+                <span class="tc-metric__lbl">Interventions</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      
+
+      <!-- Historique -->
+      <div class="tc-card tc-card--full">
+        <div class="tc-card__header tc-card__header--dark">
+          <div style="display:flex;align-items:center;gap:8px">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+            Historique complet
+          </div>
+          <button class="tc-btn tc-btn--ghost tc-btn--sm" (click)="exportHistorique()">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="13" height="13"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+            CSV
+          </button>
+        </div>
+        <div class="tc-card__body tc-card__body--scroll">
+          <table class="tc-htable">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Action</th>
+                <th>Utilisateur</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let h of historiqueTicket" [class.tc-htable__row--intervention]="h.action === 'INTERVENTION'">
+                <td class="tc-date">{{ formatDate(h.dateAction) }}</td>
+                <td>
+                  <span class="tc-action-badge" [attr.data-action]="h.action">{{ h.action }}</span>
+                </td>
+                <td>
+                  <div class="tc-user tc-user--sm">
+                    <span class="tc-user__avatar tc-user__avatar--sm">{{ h.utilisateurNom?.charAt(0) }}</span>
+                    {{ h.utilisateurNom }}
+                  </div>
+                </td>
+                <td>
+                  <ng-container *ngIf="h.description && h.description !== 'undefined'; else fallback">
+                    {{ h.description }}
+                  </ng-container>
+                  <ng-template #fallback>
+                    <span *ngIf="h.detailsJson" class="tc-muted">{{ parseIntervention(h.detailsJson) }}</span>
+                  </ng-template>
+                </td>
+              </tr>
+              <tr *ngIf="historiqueTicket.length === 0">
+                <td colspan="4">
+                  <div class="tc-empty tc-empty--sm">
+                    <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" width="32" height="32">
+                      <circle cx="20" cy="20" r="16"/><path d="M20 12v8l4 4"/>
+                    </svg>
+                    <p>Aucun historique</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+     
+
+    </div>
+
+    <div class="tc-modal__footer">
+      <button class="tc-btn tc-btn--ghost" (click)="fermerModal()">Fermer</button>
+    </div>
+<!-- ░░░░░░░░░░░░░░░ MODAL AFFECTATION ░░░░░░░░░░░░░░░ -->
+<div *ngIf="showAffectationModal" class="tc-modal-overlay" (click)="fermerModalAffectation()">
+  <div class="tc-modal tc-modal--sm" (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="tc-modal__header">
+      <div class="tc-modal__title-group">
+        <span class="tc-modal__id">#{{ ticketAAffecter?.id }}</span>
+        <h2 class="tc-modal__title">Affecter le ticket</h2>
+      </div>
+      <button class="tc-modal__close" (click)="fermerModalAffectation()">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
+          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="tc-modal__body">
+
+      <!-- Info ticket -->
+      <div class="tc-affectation-info">
+        <div class="tc-info-grid">
+          <span class="tc-info-grid__lbl">Zone</span>
+          <span class="tc-info-grid__val">{{ ticketAAffecter?.zoneNom }}</span>
+          <span class="tc-info-grid__lbl">Région</span>
+          <span class="tc-info-grid__val">{{ ticketAAffecter?.region }}</span>
+          <span class="tc-info-grid__lbl">Type panne</span>
+          <span class="tc-info-grid__val">
+            <span class="tc-panne" [class.tc-panne--critique]="ticketAAffecter?.typePanne?.includes('CRITIQUE')"
+                                   [class.tc-panne--majeure]="ticketAAffecter?.typePanne?.includes('MAJEURE')">
+              {{ ticketAAffecter?.typePanne }}
+            </span>
+          </span>
+          <span class="tc-info-grid__lbl" *ngIf="ticketAAffecter?.assignedToName">Affecté à</span>
+          <span class="tc-info-grid__val" *ngIf="ticketAAffecter?.assignedToName">
+            <span class="tc-assigned-badge">{{ ticketAAffecter?.assignedToName }}</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Sélection technicien -->
+      <div class="tc-affectation-select">
+        <label class="tc-field__label">
+          Choisir un technicien
+          <span class="tc-muted">({{ techniciens.length }} disponible{{ techniciens.length > 1 ? 's' : '' }})</span>
+        </label>
+
+        <!-- Aucun technicien -->
+        <div *ngIf="techniciens.length === 0" class="tc-empty tc-empty--sm">
+          <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" width="32" height="32">
+            <circle cx="20" cy="20" r="16"/>
+            <path d="M20 14v6M20 26h.01"/>
+          </svg>
+          <p>Aucun technicien disponible dans cette région</p>
+        </div>
+
+        <!-- Liste des techniciens -->
+        <div *ngIf="techniciens.length > 0" class="tc-tech-list">
+          <div
+            *ngFor="let tech of techniciens"
+            class="tc-tech-item"
+            [class.tc-tech-item--selected]="technicienSelectionne?.id === tech.id"
+            (click)="selectionnerTechnicien(tech)">
+            <span class="tc-user__avatar">{{ tech.username?.charAt(0)?.toUpperCase() }}</span>
+            <div class="tc-tech-item__info">
+              <span class="tc-tech-item__name">{{ tech.username }}</span>
+              <span class="tc-tech-item__region tc-muted">{{ tech.region }}</span>
+            </div>
+            <!-- Coche si sélectionné -->
+            <svg *ngIf="technicienSelectionne?.id === tech.id"
+                 viewBox="0 0 20 20" fill="currentColor" width="16" height="16"
+                 style="margin-left:auto;color:var(--tc-green)">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="tc-modal__footer">
+      <button class="tc-btn tc-btn--ghost" (click)="fermerModalAffectation()">Annuler</button>
+      <button
+        class="tc-btn tc-btn--primary"
+        [disabled]="!technicienSelectionne || loading"
+        (click)="confirmerAffectation()">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+          <path d="M8 9a3 3 0 100-6 3 3 0 000 6z"/>
+          <path fill-rule="evenodd" d="M8 11a6 6 0 00-6 6h12a6 6 0 00-6-6z" clip-rule="evenodd"/>
+        </svg>
+        {{ ticketAAffecter?.assignedToName ? 'Réaffecter' : 'Affecter' }}
+      </button>
+    </div>
+
+  </div>
+</div>
+  </div>
+</div>
+<!-- ░░░░░░ MODAL GUIDE IA ░░░░░░ -->
+<div *ngIf="showGuideModal" class="tc-modal-overlay" (click)="fermerGuideModal()">
+  <div class="tc-modal" (click)="$event.stopPropagation()">
+
+    <!-- HEADER -->
+    <div class="tc-modal__header">
+      <h2>🤖 Guide Technicien IA</h2>
+      <button class="tc-modal__close" (click)="fermerGuideModal()">✖</button>
+    </div>
+
+    <!-- BODY -->
+    <div class="tc-modal__body">
+
+      <!-- Loading -->
+      <div *ngIf="loadingGuide">
+        ⏳ Analyse IA en cours...
+      </div>
+
+      <!-- Erreur -->
+      <div *ngIf="errorGuide">
+        ❌ {{ errorGuide }}
+      </div>
+
+      <!-- Résultat -->
+      <div *ngIf="guideIA">
+
+        <h3>#{{ guideIA.ticketId }} - {{ guideIA.typePanne }}</h3>
+
+        <p><b>Priorité :</b> {{ guideIA.prioriteAction }}</p>
+        <p><b>Temps estimé :</b> {{ guideIA.tempsEstime }}</p>
+        <p><b>Automatisable :</b> {{ guideIA.automatisable ? 'Oui' : 'Non' }}</p>
+
+        <hr>
+
+        <h4>⚡ Action immédiate</h4>
+        <p>{{ guideIA.action }}</p>
+
+        <h4>🛠 Solution proposée</h4>
+        <p>{{ guideIA.solution }}</p>
+
+        <h4>📋 Étapes</h4>
+        <ul>
+          <li *ngFor="let e of guideIA.etapes">{{ e }}</li>
+        </ul>
+
+        <h4>🧰 Outils</h4>
+        <ul>
+          <li *ngFor="let o of guideIA.outils">{{ o }}</li>
+        </ul>
+
+        <h4>🧠 Justification IA</h4>
+        <p>{{ guideIA.raison }}</p>
+
+      </div>
+
+    </div>
+
+    <!-- FOOTER -->
+    <div class="tc-modal__footer">
+      <button class="tc-btn" (click)="fermerGuideModal()">Fermer</button>
+    </div>
+
+  </div>
+ </div>
+ </div> 

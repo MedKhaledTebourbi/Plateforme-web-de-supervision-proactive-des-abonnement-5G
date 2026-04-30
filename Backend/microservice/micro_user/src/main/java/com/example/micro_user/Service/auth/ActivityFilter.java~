@@ -1,0 +1,4 @@
+package com.example.micro_user.Service.auth;
+
+public class ActivityFilter {
+}

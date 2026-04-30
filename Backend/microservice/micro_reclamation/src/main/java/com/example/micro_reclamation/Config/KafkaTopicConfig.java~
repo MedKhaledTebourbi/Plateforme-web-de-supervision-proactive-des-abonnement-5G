@@ -1,0 +1,34 @@
+package com.example.micro_reclamation.Config;
+
+import org.apache.kafka.clients.admin.NewTopic;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.kafka.config.TopicBuilder;
+
+@Configuration
+public class KafkaTopicConfig {
+
+    /**
+     * Topic principal : reçoit tous les ReclamationEvent.
+     * 3 partitions → permet 3 consommateurs en parallèle.
+     */
+    @Bean
+    public NewTopic reclamationTopic() {
+        return TopicBuilder.name("reclamation-topic")
+                .partitions(3)
+                .replicas(1)   // Passer à 2-3 en production
+                .build();
+    }
+
+    /**
+     * Dead Letter Topic : reçoit les messages en échec
+     * après 3 tentatives de traitement.
+     */
+    @Bean
+    public NewTopic reclamationDLT() {
+        return TopicBuilder.name("reclamation-topic.DLT")
+                .partitions(1)
+                .replicas(1)
+                .build();
+    }
+}

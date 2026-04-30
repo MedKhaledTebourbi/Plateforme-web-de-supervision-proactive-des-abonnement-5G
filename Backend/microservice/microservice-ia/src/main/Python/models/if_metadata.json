@@ -1,0 +1,16 @@
+{
+  "features": [
+    "taux_utilisation",
+    "ratio_satures",
+    "tendance_6pts",
+    "taux_lag1",
+    "taux_lag3",
+    "hour_of_day",
+    "day_of_week"
+  ],
+  "n_samples": 4857,
+  "n_anomalies": 454,
+  "contamination": 0.1,
+  "trained_at": "2026-04-10T22:33:33.609238",
+  "score_threshold": 0.0
+}

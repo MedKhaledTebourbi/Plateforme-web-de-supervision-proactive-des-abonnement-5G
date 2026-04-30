@@ -1,0 +1,66 @@
+<div class="charts-wrapper">
+
+  <!-- HEADER -->
+  <div class="charts-header">
+    <div>
+      <div class="charts-title">Tableau de bord analytique</div>
+      <div class="charts-meta">Activité en temps réel · mise à jour automatique</div>
+    </div>
+    <div class="live-badge">
+      <span class="live-dot"></span>
+      Live
+    </div>
+  </div>
+
+  <!-- CHARTS GRID -->
+  <div class="charts-grid">
+
+    <!-- CONNEXIONS PAR JOUR -->
+    <div class="chart-card chart-card--large">
+      <div class="chart-card-header">
+        <div class="chart-icon chart-icon--blue">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="chart-card-title">Connexions par jour</div>
+          <div class="chart-card-meta">Historique des 7 derniers jours</div>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap">
+        <canvas id="connectionsChart"></canvas>
+      </div>
+    </div>
+
+    <!-- UTILISATEURS EN LIGNE -->
+    <div class="chart-card chart-card--small">
+      <div class="chart-card-header">
+        <div class="chart-icon chart-icon--green">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197"/>
+          </svg>
+        </div>
+        <div>
+          <div class="chart-card-title">Utilisateurs en ligne</div>
+          <div class="chart-card-meta">État actuel des sessions</div>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap chart-canvas-wrap--doughnut">
+        <canvas id="onlineChart"></canvas>
+      </div>
+      <!-- LEGENDE -->
+      <div class="doughnut-legend">
+        <div class="legend-item">
+          <span class="legend-dot" style="background:#00e5a0; box-shadow: 0 0 8px #00e5a0"></span>
+          <span class="legend-label">En ligne</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background:#ff4d6d"></span>
+          <span class="legend-label">Hors ligne</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
