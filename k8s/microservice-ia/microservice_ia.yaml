@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: microservice-ia
+  labels:
+    app: microservice-ia
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: microservice-ia
+  template:
+    metadata:
+      labels:
+        app: microservice-ia
+    spec:
+      containers:
+        - name: microservice-ia
+          image: microservice-ia:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8085
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres:5432/telecom
+            - name: SPRING_DATASOURCE_USERNAME
+              value: postgres
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: postgres
+            - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+              value: update
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: kafka:9092
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: http://eureka:8761/eureka
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: microservice-ia
+spec:
+  selector:
+    app: microservice-ia
+  ports:
+    - port: 8085
+      targetPort: 8085
+  type: ClusterIP

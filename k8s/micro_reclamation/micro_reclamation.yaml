@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: micro-reclamation
+  labels:
+    app: micro-reclamation
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: micro-reclamation
+  template:
+    metadata:
+      labels:
+        app: micro-reclamation
+    spec:
+      containers:
+        - name: micro-reclamation
+          image: micro-reclamation:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8082
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres:5432/telecom
+            - name: SPRING_DATASOURCE_USERNAME
+              value: postgres
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: postgres
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: http://eureka:8761/eureka
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: kafka:9092
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: micro-reclamation
+spec:
+  selector:
+    app: micro-reclamation
+  ports:
+    - port: 8082
+      targetPort: 8082
+  type: ClusterIP
